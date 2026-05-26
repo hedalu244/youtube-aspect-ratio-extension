@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Aspect Ratio Controller",
+  "version": "0.1.0",
+  "description": "Adjust YouTube video aspect ratios.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Aspect Ratio Controller"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
