@@ -21,19 +21,19 @@ function collectSettings(): RawSettings {
 
         sourceRatio: {
             mode: getRadioValue("sourceRatio"),
-            customX: parseFloat(getElement("sourceCustomX", HTMLInputElement).value),
-            customY: parseFloat(getElement("sourceCustomY", HTMLInputElement).value)
+            customX: getElement("sourceCustomX", HTMLInputElement).value,
+            customY: getElement("sourceCustomY", HTMLInputElement).value
         },
 
         targetRatio: {
             mode: getRadioValue("targetRatio"),
-            customX: parseFloat(getElement("targetCustomX", HTMLInputElement).value),
-            customY: parseFloat(getElement("targetCustomY", HTMLInputElement).value)
+            customX: getElement("targetCustomX", HTMLInputElement).value,
+            customY: getElement("targetCustomY", HTMLInputElement).value
         },
 
         scalingMode: {
             mode: getRadioValue("scalingMode"),
-            manualScale: parseFloat(getElement("manualScale", HTMLInputElement).value)
+            manualScale: getElement("manualScale", HTMLInputElement).value
         }
     };
 }
@@ -64,6 +64,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const scalingModeRadios = document.querySelectorAll('input[name="scalingMode"]');
     scalingModeRadios.forEach(radio => radio.addEventListener("change", sendSettings));
+    const manualScale = getElement("manualScale", HTMLInputElement);
+    manualScale.addEventListener("input", sendSettings);
 
     getElement("rememberPerVideo", HTMLInputElement).addEventListener("change", sendSettings);
 });

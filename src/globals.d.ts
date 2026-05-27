@@ -9,17 +9,17 @@ type RawSettings = {
     enabled: boolean;
     sourceRatio: {
         mode: string;
-        customX: number;
-        customY: number;
+        customX: string;
+        customY: string;
     };
     targetRatio: {
         mode: string;
-        customX: number;
-        customY: number;
+        customX: string;
+        customY: string;
     };
     scalingMode: {
         mode: string;
-        manualScale: number;
+        manualScale: string;
     };
 };
 
@@ -29,12 +29,6 @@ type Settings = {
     enabled: true;
     sourceRatio: number;
     targetRatio: number;
-    scalingMode: {
-        mode: "showAll";
-    } | {
-        mode: "coverAll";
-    } | {
-        mode: "manual";
-        scale: number;
-    };
+    scalingMode: "showAll" | "coverAll" | "manual";
+    manualScale: number;
 };
