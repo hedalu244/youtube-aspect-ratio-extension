@@ -1,26 +1,124 @@
+* {
+  box-sizing: border-box;
+  --text-color: #29316b;
+  --bg-color: #fafdff;
+  --accent-color: #1094fb;
+  --sub-color: #c3e2fa;
+}
+
 body {
-  margin: 0;
-  font-family: sans-serif;
-  min-width: 240px;
-}
-
-.container {
+  width: 320px;
   padding: 12px;
+  font-family: sans-serif;
+  color: var(--text-color);
+  background: var(--bg-color);
+  font-size: 14px;
 }
 
-h1 {
-  margin: 0 0 8px;
-  font-size: 16px;
+section {
+  margin-top: 16px;
+  padding-top: 8px;
 }
 
-p {
-  margin: 0 0 12px;
-  font-size: 13px;
+h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.1em;
+  color: var(--accent-color);
 }
 
-button {
-  width: 100%;
-  padding: 8px;
-  font-size: 13px;
-  cursor: pointer;
+label {
+  display: flex;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 24px;
+  border-radius: 12px;
+}
+
+
+.checkbox-row {
+  margin-top: 8px;
+}
+
+input[type="radio"] {
+  display: none;
+}
+
+label:has(input[type="radio"]) {
+  margin: 0 15px;
+  transition: .3s;
+}
+
+label:has(input[type="radio"]:checked) {
+  background-color: var(--accent-color);
+  font-weight: bold;
+  color: #fff;
+}
+
+
+/* Number input styles */
+.custom-row {
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  border-radius: 16px;
+  line-height: 32px;
+}
+
+input[type="number"] {
+  width: 50px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  text-align: center;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Toggle switch styles */
+.checkbox-row {
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  border-radius: 16px;
+  line-height: 32px;
+}
+
+input[type="checkbox"] {
+  display: none;
+}
+
+i {
+  display: inline-block;
+  width: 2.8em;
+  height: 1.6em;
+  border-radius: 0.8em;
+  vertical-align: middle;
+  transition: .25s .09s;
+  position: relative;
+  background: var(--sub-color);
+
+  &:after {
+    content: " ";
+    display: block;
+    width: 1.2em;
+    height: 1.2em;
+    top: 0.2em;
+    left: 0.2em;
+    border-radius: 50%;
+    background: #fff;
+    position: absolute;
+    transition: .15s;
+  }
+}
+
+input[type="checkbox"]:checked+i {
+  background: var(--accent-color);
+}
+
+input[type="checkbox"]:checked+i:after {
+  transform: translateX(1.2em);
 }

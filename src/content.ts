@@ -5,7 +5,5 @@ window.addEventListener("load", () => {
 });
 
 chrome.runtime.onMessage.addListener((message: Message) => {
-    if (message?.type === "APPLY_ASPECT_RATIO") {
-        console.log("Apply clicked");
-    }
+    console.log("Received message in content script", message);
 });

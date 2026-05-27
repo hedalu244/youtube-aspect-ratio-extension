@@ -1,1 +1,0 @@
-(()=>{console.log("YouTube Aspect Ratio content script loaded");window.addEventListener("load",()=>{console.log("Window loaded")});chrome.runtime.onMessage.addListener(e=>{e?.type==="APPLY_ASPECT_RATIO"&&console.log("Apply clicked")});})();

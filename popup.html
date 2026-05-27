@@ -1,17 +1,72 @@
-<!doctype html>
-<html lang="ja">
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Aspect Ratio</title>
-  <link rel="stylesheet" href="popup.css" />
+    <meta charset="UTF-8">
+    <title>Aspect Ratio Controller</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
-  <main class="container">
-    <h1>YouTube Aspect Ratio</h1>
-    <p>Popup is ready.</p>
-    <button id="applyBtn" type="button">Apply</button>
-  </main>
-  <script src="popup.js"></script>
+    <!--
+    <label class="checkbox-row">
+        <input type="checkbox" id="rememberPerVideo">
+        <i></i>
+        Remember per video
+    </label>
+    -->
+    <label class="checkbox-row">
+        <input type="checkbox" id="enabled" checked>
+        <i></i>
+        Enable
+    </label>
+
+    <section>
+        <h2>Source Ratio</h2>
+
+        <label><input type="radio" name="sourceRatio" value="auto" checked> Auto</label>
+        <label><input type="radio" name="sourceRatio" value="4:3"> 4:3</label>
+        <label><input type="radio" name="sourceRatio" value="16:9"> 16:9</label>
+
+        <label class="custom-row">
+            <input type="radio" name="sourceRatio" value="custom">
+            Custom
+            <input type="number" id="sourceCustomX" min="1" step="1" value="4">
+            :
+            <input type="number" id="sourceCustomY" min="1" step="1" value="3">
+        </label>
+    </section>
+
+    <section>
+        <h2>Target Ratio</h2>
+
+        <label><input type="radio" name="targetRatio" value="4:3"> 4:3</label>
+        <label><input type="radio" name="targetRatio" value="16:9" checked> 16:9</label>
+        <label><input type="radio" name="targetRatio" value="21:9"> 21:9</label>
+
+        <label class="custom-row">
+            <input type="radio" name="targetRatio" value="custom">
+            Custom
+            <input type="number" id="targetCustomX" min="1" step="1" value="16">
+            :
+            <input type="number" id="targetCustomY" min="1" step="1" value="9">
+        </label>
+    </section>
+
+    <section>
+        <h2>Scaling Mode</h2>
+
+        <label><input type="radio" name="scalingMode" value="showAll" checked> Show all</label>
+        <label><input type="radio" name="scalingMode" value="coverAll"> Cover all</label>
+
+        <label class="custom-row">
+            <input type="radio" name="scalingMode" value="manual">
+            Manual
+            <input type="number" id="manualScale" min="1" step="1" value="100">
+            %
+        </label>
+    </section>
+    <script src="popup.js"></script>
 </body>
+
 </html>
