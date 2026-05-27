@@ -1,0 +1,8 @@
+Auto detectしたratioをpopup側に表示
+　→　contentsからpopupへメッセージを送る機構が必要
+
+元動画と要素サイズが一致していないとき、showAll、coverAllの挙動がおかしい。
+判定戦略を変える必要がある。
+
+windowResizedでも比率を更新
+content側にsettingを保持する必要がある？
