@@ -4,8 +4,8 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "build:watch": "node scripts/build.mjs --watch",
+    "build": "esbuild src/popup.ts src/content.ts --bundle --outdir=. --format=iife --platform=browser --target=es2020",
+    "build:watch": "esbuild src/popup.ts src/content.ts --bundle --outdir=. --format=iife --platform=browser --target=es2020 --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

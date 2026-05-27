@@ -1,1 +1,95 @@
-(()=>{console.log("YouTube Aspect Ratio content script loaded");window.addEventListener("load",()=>{console.log("Window loaded")});function s(e){let o=e.split(":");if(o.length!==2)throw new Error(`Invalid ratio format: ${e}`);let[l,n]=o.map(Number),t=l/n;if(isNaN(t)||!isFinite(t))throw new Error(`Invalid ratio numbers: ${e}`);return t}function r(){let e=document.querySelector("video");if(!e)throw new Error("No video element found");return e}function c(){let e=r();return e.videoWidth/e.videoHeight}function u(e){if(!e.enabled)return{enabled:!1};let o=e.sourceRatio.mode==="auto"?c():s(e.sourceRatio.mode==="custom"?e.sourceRatio.customX+":"+e.sourceRatio.customY:e.sourceRatio.mode),l=s(e.targetRatio.mode==="custom"?e.targetRatio.customX+":"+e.targetRatio.customY:e.targetRatio.mode),n=e.scalingMode.mode;if(n!=="manual"&&n!=="showAll"&&n!=="coverAll")throw new Error(`Invalid scaling mode: ${n}`);return{enabled:!0,sourceRatio:o,targetRatio:l,scalingMode:n,manualScale:n==="manual"?parseFloat(e.scalingMode.manualScale)/100:1}}function a(e,o,l,n=1){if(l==="showAll")return e<o?[1,e/o]:[o/e,1];if(l==="coverAll")return e<o?[o/e,1]:[1,e/o];{let t=Math.sqrt(o/e);return[n*t,n/t]}}function i(e,o,l){e.style.transform=`scale(${o}, ${l})`}chrome.runtime.onMessage.addListener(e=>{if(e.type==="SETTINGS_UPDATED"){let o=u(e.settings);if(console.log("Normalized settings",o),o.enabled){let[l,n]=a(o.sourceRatio,o.targetRatio,o.scalingMode,o.manualScale);i(r(),l,n),console.log(`Applied scale: ${l}x${n}`)}else{i(r(),1,1);return}}});})();
+(() => {
+  // src/ratio.ts
+  function parseRatio(str) {
+    const splited = str.split(":");
+    if (splited.length !== 2) {
+      throw new Error(`Invalid ratio format: ${str}`);
+    }
+    const [x, y] = splited.map(Number);
+    const ans = x / y;
+    if (isNaN(ans) || !isFinite(ans)) {
+      throw new Error(`Invalid ratio numbers: ${str}`);
+    }
+    return ans;
+  }
+
+  // src/settingData.ts
+  function normalizeSettings(rawSettings, detectedRatio) {
+    if (!rawSettings.enabled) {
+      return { enabled: false };
+    }
+    const sourceRatio = rawSettings.sourceRatio.mode === "auto" ? detectedRatio : parseRatio(
+      rawSettings.sourceRatio.mode === "custom" ? rawSettings.sourceRatio.customX + ":" + rawSettings.sourceRatio.customY : rawSettings.sourceRatio.mode
+    );
+    const targetRatio = parseRatio(
+      rawSettings.targetRatio.mode === "custom" ? rawSettings.targetRatio.customX + ":" + rawSettings.targetRatio.customY : rawSettings.targetRatio.mode
+    );
+    const mode = rawSettings.scalingMode.mode;
+    if (mode !== "manual" && mode !== "showAll" && mode !== "coverAll") {
+      throw new Error(`Invalid scaling mode: ${mode}`);
+    }
+    return {
+      enabled: true,
+      sourceRatio,
+      targetRatio,
+      scalingMode: mode,
+      manualScale: mode === "manual" ? parseFloat(rawSettings.scalingMode.manualScale) / 100 : 1
+    };
+  }
+
+  // src/video.ts
+  function getVideo() {
+    const video = document.querySelector("video");
+    if (!video) {
+      throw new Error("No video element found");
+    }
+    return video;
+  }
+  function computeScale(sourceRatio, targetRatio, mode, manualScale = 1) {
+    if (mode === "showAll") {
+      if (sourceRatio < targetRatio) {
+        return [1, sourceRatio / targetRatio];
+      } else {
+        return [targetRatio / sourceRatio, 1];
+      }
+    } else if (mode === "coverAll") {
+      if (sourceRatio < targetRatio) {
+        return [targetRatio / sourceRatio, 1];
+      } else {
+        return [1, sourceRatio / targetRatio];
+      }
+    } else {
+      const r = Math.sqrt(targetRatio / sourceRatio);
+      return [manualScale * r, manualScale / r];
+    }
+  }
+  function applyScale(video, scaleX, scaleY) {
+    video.style.transform = `scale(${scaleX}, ${scaleY})`;
+    console.log(`Applied scale x:${scaleX} y:${scaleY}`);
+  }
+  function applySettingsToVideo(settings) {
+    if (!settings.enabled) {
+      applyScale(getVideo(), 1, 1);
+    } else {
+      const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, settings.scalingMode, settings.manualScale);
+      applyScale(getVideo(), scaleX, scaleY);
+    }
+  }
+  function detectVideoAspectRatio() {
+    const video = getVideo();
+    return video.videoWidth / video.videoHeight;
+  }
+
+  // src/content.ts
+  console.log("YouTube Aspect Ratio content script loaded");
+  function messageHandler(message) {
+    console.log("Received message in content script", message);
+    if (message.type === "SETTINGS_UPDATED") {
+      const detectedRatio = detectVideoAspectRatio();
+      const settings = normalizeSettings(message.settings, detectedRatio);
+      console.log("Normalized settings", settings);
+      applySettingsToVideo(settings);
+    }
+  }
+  chrome.runtime.onMessage.addListener(messageHandler);
+})();
