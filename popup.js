@@ -13,6 +13,21 @@
     }
   }
 
+  // src/ratio.ts
+  function ratioToString(ratio) {
+    let best = { x: ratio, y: 1, score: Infinity };
+    for (let i = 1; i <= 30; i++) {
+      const a = Math.round(i * ratio * 100) / 100;
+      const b = Math.round(i / ratio * 100) / 100;
+      const score_a = Math.abs(a - Math.round(a));
+      const score_b = Math.abs(b - Math.round(b));
+      if (score_a < best.score) best = { x: a, y: i, score: score_a };
+      if (score_b < best.score) best = { x: i, y: b, score: score_b };
+      if (best.score < 5e-3) break;
+    }
+    return `${best.x}:${best.y}`;
+  }
+
   // src/settingData.ts
   function generateDefaultSetting() {
     return {
@@ -111,9 +126,22 @@
     setChangeListenerToRadioGroup("scalingMode", listener);
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
   }
+  function showDetectedRatio(ratio) {
+    getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
+  }
 
   // src/popup.ts
   console.log("Popup script loaded");
+  function messageHandler(message) {
+    console.log("Received message in popup script", message);
+    if (message.type === "DETECTED_RATIO_UPDATED") {
+      try {
+        showDetectedRatio(message.ratio);
+      } catch (error) {
+        console.warn("Failed to update detected ratio in popup", error);
+      }
+    }
+  }
   function updateHandler() {
     const settings = getSettingsFromGUI();
     saveGlobalSettings(settings).catch((error) => {
@@ -121,6 +149,7 @@
     });
     sendMessageToActiveTab({ type: "SETTINGS_UPDATED", settings });
   }
+  chrome.runtime.onMessage.addListener(messageHandler);
   loadGlobalSettings().then((loadedSettings) => {
     applySettingsToGUI(loadedSettings);
   }).catch((error) => {

@@ -37,6 +37,15 @@
     };
   }
 
+  // src/message.ts
+  async function sendMessageToPopup(message) {
+    try {
+      void chrome.runtime.sendMessage(message);
+    } catch (error) {
+      console.warn("Failed to send message to popup script", message, error);
+    }
+  }
+
   // src/video.ts
   function getVideo() {
     const video = document.querySelector("video");
@@ -81,14 +90,27 @@
   }
 
   // src/content.ts
-  console.log("YouTube Aspect Ratio content script loaded");
+  console.log("YouTube Aspect Ratio content script loaded!");
+  function sendDetectedRatio() {
+    try {
+      const ratio = detectVideoAspectRatio();
+      sendMessageToPopup({ type: "DETECTED_RATIO_UPDATED", ratio });
+    } catch (error) {
+      console.warn("Failed to detect video aspect ratio", error);
+    }
+  }
   function messageHandler(message) {
     console.log("Received message in content script", message);
+    if (message.type === "REQUEST_DETECTED_RATIO") {
+      sendDetectedRatio();
+      return;
+    }
     if (message.type === "SETTINGS_UPDATED") {
       const detectedRatio = detectVideoAspectRatio();
       const settings = normalizeSettings(message.settings, detectedRatio);
       console.log("Normalized settings", settings);
       applySettingsToVideo(settings);
+      sendDetectedRatio();
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);

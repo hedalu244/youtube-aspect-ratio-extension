@@ -2,7 +2,7 @@ import { normalizeSettings } from "./settingData";
 import { Message, sendMessageToPopup } from "./message";
 import { applySettingsToVideo, detectVideoAspectRatio } from "./video";
 
-console.log("YouTube Aspect Ratio content script loaded");
+console.log("YouTube Aspect Ratio content script loaded!");
 
 
 function sendDetectedRatio() {
@@ -34,17 +34,18 @@ if (document.readyState === "loading") {
 function messageHandler(message: Message) {
     console.log("Received message in content script", message);
 
-    /*
     if (message.type === "REQUEST_DETECTED_RATIO") {
         sendDetectedRatio();
+        return;
     }
-    */
     
     if (message.type === "SETTINGS_UPDATED") {
         const detectedRatio = detectVideoAspectRatio();
         const settings = normalizeSettings(message.settings, detectedRatio);
         console.log("Normalized settings", settings);
         applySettingsToVideo(settings);
+
+        sendDetectedRatio();
     }
 }
 

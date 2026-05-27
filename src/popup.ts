@@ -8,7 +8,11 @@ function messageHandler(message: Message) {
     console.log("Received message in popup script", message);
     
     if (message.type === "DETECTED_RATIO_UPDATED") {
-        showDetectedRatio(message.ratio);
+        try {
+            showDetectedRatio(message.ratio);
+        } catch (error) {
+            console.warn("Failed to update detected ratio in popup", error);
+        }
     }
 }
 
@@ -22,7 +26,7 @@ function updateHandler() {
     sendMessageToActiveTab({ type: "SETTINGS_UPDATED", settings });
 }
 
-//chrome.runtime.onMessage.addListener(messageHandler);
+chrome.runtime.onMessage.addListener(messageHandler);
 
 loadGlobalSettings().then(loadedSettings => {
     applySettingsToGUI(loadedSettings);
