@@ -1,12 +1,4 @@
-import { Settings } from "./settingData";
-
-function getVideo(): HTMLVideoElement {
-    const video = document.querySelector("video");
-    if (!video) {
-        throw new Error("No video element found");
-    }
-    return video;
-}
+import { normalizeSettings, RawSettings, Settings } from "./settingData";
 
 function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" | "coverAll" | "manual", manualScale = 1): [number, number] {
     if (mode === "showAll") {
@@ -29,19 +21,43 @@ function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" 
 
 function applyScale(video: HTMLVideoElement, scaleX: number, scaleY: number) {
     video.style.transform = `scale(${scaleX}, ${scaleY})`;
-    console.log(`Applied scale x:${scaleX} y:${scaleY}`);
+    console.log(`Applied scale x:${scaleX} y:${scaleY} to `, video);
 }
 
-export function applySettingsToVideo(settings: Settings) {
-    if (!settings.enabled) {
-        applyScale(getVideo(), 1, 1);
+export function getVideo(): HTMLVideoElement | null {
+    return document.querySelector("video");
+}
+
+export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElement | null = null) {
+    if (!video) {
+        video = getVideo();
+        if (!video) {
+            console.warn("Cannot apply settings because video element is not found");
+            return;
+        }
+    }
+
+    const s = normalizeSettings(settings, detectVideoAspectRatio());
+    console.log("Normalized settings", s);
+    if (!s.enabled) {
+        applyScale(video, 1, 1);
     } else {
-        const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, settings.scalingMode, settings.manualScale);
-        applyScale(getVideo(), scaleX, scaleY);
+        const [scaleX, scaleY] = computeScale(s.sourceRatio, s.targetRatio, s.scalingMode, s.manualScale);
+        applyScale(video, scaleX, scaleY);
     }
 }
 
 export function detectVideoAspectRatio(): number {
     const video = getVideo();
+    if (!video) {
+        console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
+        return 16 / 9;
+    }
+
+    if (video.videoHeight === 0 || video.videoWidth === 0) {
+        console.warn("Video metadata not loaded yet, cannot detect aspect ratio. Defaulting to 16:9.");
+        return 16 / 9;
+    }
+
     return video.videoWidth / video.videoHeight;
 }

@@ -1,4 +1,5 @@
 import { generateDefaultSetting, RawSettings } from "./settingData";
+declare const chrome: any;
 
 export async function loadGlobalSettings(): Promise<RawSettings> {
     const result = await chrome.storage.sync.get("globalSettings");

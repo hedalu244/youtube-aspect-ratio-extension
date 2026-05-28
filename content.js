@@ -14,6 +14,25 @@
   }
 
   // src/settingData.ts
+  function generateDefaultSetting() {
+    return {
+      enabled: true,
+      sourceRatio: {
+        mode: "auto",
+        customX: "16",
+        customY: "9"
+      },
+      targetRatio: {
+        mode: "16:9",
+        customX: "16",
+        customY: "9"
+      },
+      scalingMode: {
+        mode: "showAll",
+        manualScale: "100"
+      }
+    };
+  }
   function normalizeSettings(rawSettings, detectedRatio) {
     if (!rawSettings.enabled) {
       return { enabled: false };
@@ -47,13 +66,6 @@
   }
 
   // src/video.ts
-  function getVideo() {
-    const video = document.querySelector("video");
-    if (!video) {
-      throw new Error("No video element found");
-    }
-    return video;
-  }
   function computeScale(sourceRatio, targetRatio, mode, manualScale = 1) {
     if (mode === "showAll") {
       if (sourceRatio < targetRatio) {
@@ -74,44 +86,105 @@
   }
   function applyScale(video, scaleX, scaleY) {
     video.style.transform = `scale(${scaleX}, ${scaleY})`;
-    console.log(`Applied scale x:${scaleX} y:${scaleY}`);
+    console.log(`Applied scale x:${scaleX} y:${scaleY} to `, video);
   }
-  function applySettingsToVideo(settings) {
-    if (!settings.enabled) {
-      applyScale(getVideo(), 1, 1);
+  function getVideo() {
+    return document.querySelector("video");
+  }
+  function applySettingsToVideo(settings, video = null) {
+    if (!video) {
+      video = getVideo();
+      if (!video) {
+        console.warn("Cannot apply settings because video element is not found");
+        return;
+      }
+    }
+    const s = normalizeSettings(settings, detectVideoAspectRatio());
+    console.log("Normalized settings", s);
+    if (!s.enabled) {
+      applyScale(video, 1, 1);
     } else {
-      const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, settings.scalingMode, settings.manualScale);
-      applyScale(getVideo(), scaleX, scaleY);
+      const [scaleX, scaleY] = computeScale(s.sourceRatio, s.targetRatio, s.scalingMode, s.manualScale);
+      applyScale(video, scaleX, scaleY);
     }
   }
   function detectVideoAspectRatio() {
     const video = getVideo();
+    if (!video) {
+      console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
+      return 16 / 9;
+    }
+    if (video.videoHeight === 0 || video.videoWidth === 0) {
+      console.warn("Video metadata not loaded yet, cannot detect aspect ratio. Defaulting to 16:9.");
+      return 16 / 9;
+    }
     return video.videoWidth / video.videoHeight;
+  }
+
+  // src/storage.ts
+  async function loadGlobalSettings() {
+    const result = await chrome.storage.sync.get("globalSettings");
+    return await result.globalSettings || generateDefaultSetting();
+  }
+  async function saveGlobalSettings(settings) {
+    await chrome.storage.sync.set({
+      globalSettings: settings
+    });
   }
 
   // src/content.ts
   console.log("YouTube Aspect Ratio content script loaded!");
-  function sendDetectedRatio() {
-    try {
-      const ratio = detectVideoAspectRatio();
-      sendMessageToPopup({ type: "DETECTED_RATIO_UPDATED", ratio });
-    } catch (error) {
-      console.warn("Failed to detect video aspect ratio", error);
-    }
-  }
+  var currentSettings = generateDefaultSetting();
   function messageHandler(message) {
     console.log("Received message in content script", message);
     if (message.type === "REQUEST_DETECTED_RATIO") {
-      sendDetectedRatio();
+      sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio() });
+      return;
+    }
+    if (message.type === "REQUEST_CURRENT_SETTINGS") {
+      sendMessageToPopup({ type: "CURRENT_SETTINGS", settings: currentSettings });
+      return;
+    }
+    if (message.type === "REQUEST_APPLY_SETTINGS") {
+      applySettingsToVideo(currentSettings);
       return;
     }
     if (message.type === "SETTINGS_UPDATED") {
-      const detectedRatio = detectVideoAspectRatio();
-      const settings = normalizeSettings(message.settings, detectedRatio);
-      console.log("Normalized settings", settings);
-      applySettingsToVideo(settings);
-      sendDetectedRatio();
+      currentSettings = message.settings;
+      applySettingsToVideo(currentSettings);
+      saveGlobalSettings(currentSettings).catch((error) => {
+        console.warn("Failed to save settings", error);
+      });
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
+  function loadSettings() {
+    loadGlobalSettings().then((loadedSettings) => {
+      currentSettings = loadedSettings;
+      console.log("Settings loaded successfully");
+    }).catch((error) => {
+      console.warn("Failed to load settings", error);
+    });
+  }
+  function startObserveVideo() {
+    const video = getVideo();
+    if (!video) return false;
+    applySettingsToVideo(currentSettings, video);
+    video.addEventListener("loadedmetadata", () => applySettingsToVideo(currentSettings, video));
+    const observer = new MutationObserver(() => {
+      applySettingsToVideo(currentSettings, video);
+    });
+    observer.observe(video, { attributes: true });
+    return true;
+  }
+  function waitForNewVideo() {
+    if (startObserveVideo()) return;
+    const observer = new MutationObserver(() => {
+      if (startObserveVideo()) observer.disconnect();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  loadSettings();
+  waitForNewVideo();
+  document.addEventListener("yt-navigate-finish", waitForNewVideo);
 })();

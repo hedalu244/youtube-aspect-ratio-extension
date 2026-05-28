@@ -13,53 +13,6 @@
     }
   }
 
-  // src/ratio.ts
-  function ratioToString(ratio) {
-    let best = { x: ratio, y: 1, score: Infinity };
-    for (let i = 1; i <= 30; i++) {
-      const a = Math.round(i * ratio * 100) / 100;
-      const b = Math.round(i / ratio * 100) / 100;
-      const score_a = Math.abs(a - Math.round(a));
-      const score_b = Math.abs(b - Math.round(b));
-      if (score_a < best.score) best = { x: a, y: i, score: score_a };
-      if (score_b < best.score) best = { x: i, y: b, score: score_b };
-      if (best.score < 5e-3) break;
-    }
-    return `${best.x}:${best.y}`;
-  }
-
-  // src/settingData.ts
-  function generateDefaultSetting() {
-    return {
-      enabled: true,
-      sourceRatio: {
-        mode: "auto",
-        customX: "16",
-        customY: "9"
-      },
-      targetRatio: {
-        mode: "16:9",
-        customX: "16",
-        customY: "9"
-      },
-      scalingMode: {
-        mode: "showAll",
-        manualScale: "100"
-      }
-    };
-  }
-
-  // src/storage.ts
-  async function loadGlobalSettings() {
-    const result = await chrome.storage.sync.get("globalSettings");
-    return await result.globalSettings || generateDefaultSetting();
-  }
-  async function saveGlobalSettings(settings) {
-    await chrome.storage.sync.set({
-      globalSettings: settings
-    });
-  }
-
   // src/dom.ts
   function getElement(id, constructor) {
     const element = document.getElementById(id);
@@ -78,6 +31,21 @@
     document.querySelectorAll(`input[name="${name}"]`).forEach((radio) => {
       radio.checked = radio.value === value;
     });
+  }
+
+  // src/ratio.ts
+  function ratioToString(ratio) {
+    let best = { x: ratio, y: 1, score: Infinity };
+    for (let i = 1; i <= 30; i++) {
+      const a = Math.round(i * ratio * 100) / 100;
+      const b = Math.round(i / ratio * 100) / 100;
+      const score_a = Math.abs(a - Math.round(a));
+      const score_b = Math.abs(b - Math.round(b));
+      if (score_a < best.score) best = { x: a, y: i, score: score_a };
+      if (score_b < best.score) best = { x: i, y: b, score: score_b };
+      if (best.score < 5e-3) break;
+    }
+    return `${best.x}:${best.y}`;
   }
 
   // src/gui.ts
@@ -105,25 +73,25 @@
     };
   }
   function applySettingsToGUI(settings) {
-    getElement("enabled", HTMLInputElement).checked = settings.enabled;
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
+    setRadioValue("targetRatio", settings.targetRatio.mode);
+    setRadioValue("scalingMode", settings.scalingMode.mode);
+    getElement("enabled", HTMLInputElement).checked = settings.enabled;
     getElement("sourceCustomX", HTMLInputElement).value = settings.sourceRatio.customX;
     getElement("sourceCustomY", HTMLInputElement).value = settings.sourceRatio.customY;
-    setRadioValue("targetRatio", settings.targetRatio.mode);
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
-    setRadioValue("scalingMode", settings.scalingMode.mode);
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
   }
   function setUpdateListenerToGUI(listener) {
-    getElement("enabled", HTMLInputElement).addEventListener("change", listener);
     setChangeListenerToRadioGroup("sourceRatio", listener);
+    setChangeListenerToRadioGroup("targetRatio", listener);
+    setChangeListenerToRadioGroup("scalingMode", listener);
+    getElement("enabled", HTMLInputElement).addEventListener("change", listener);
     getElement("sourceCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("sourceCustomY", HTMLInputElement).addEventListener("input", listener);
-    setChangeListenerToRadioGroup("targetRatio", listener);
     getElement("targetCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("targetCustomY", HTMLInputElement).addEventListener("input", listener);
-    setChangeListenerToRadioGroup("scalingMode", listener);
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
   }
   function showDetectedRatio(ratio) {
@@ -134,27 +102,23 @@
   console.log("Popup script loaded");
   function messageHandler(message) {
     console.log("Received message in popup script", message);
-    if (message.type === "DETECTED_RATIO_UPDATED") {
+    if (message.type === "DETECTED_RATIO") {
       try {
         showDetectedRatio(message.ratio);
       } catch (error) {
         console.warn("Failed to update detected ratio in popup", error);
       }
     }
-  }
-  function updateHandler() {
-    const settings = getSettingsFromGUI();
-    saveGlobalSettings(settings).catch((error) => {
-      console.warn("Failed to save settings", error);
-    });
-    sendMessageToActiveTab({ type: "SETTINGS_UPDATED", settings });
+    if (message.type === "CURRENT_SETTINGS") {
+      try {
+        applySettingsToGUI(message.settings);
+      } catch (error) {
+        console.warn("Failed to apply current settings to popup", error);
+      }
+    }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
-  loadGlobalSettings().then((loadedSettings) => {
-    applySettingsToGUI(loadedSettings);
-  }).catch((error) => {
-    console.warn("Failed to load settings", error);
-  });
+  sendMessageToActiveTab({ type: "REQUEST_CURRENT_SETTINGS" });
   sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
-  setUpdateListenerToGUI(updateHandler);
+  setUpdateListenerToGUI(() => sendMessageToActiveTab({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
 })();

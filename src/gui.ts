@@ -31,31 +31,26 @@ export function getSettingsFromGUI(): RawSettings {
 }
 
 export function applySettingsToGUI(settings: RawSettings) {
-    getElement("enabled", HTMLInputElement).checked = settings.enabled;
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
+    setRadioValue("targetRatio", settings.targetRatio.mode);
+    setRadioValue("scalingMode", settings.scalingMode.mode);
+    getElement("enabled", HTMLInputElement).checked = settings.enabled;
     getElement("sourceCustomX", HTMLInputElement).value = settings.sourceRatio.customX;
     getElement("sourceCustomY", HTMLInputElement).value = settings.sourceRatio.customY;
-    setRadioValue("targetRatio", settings.targetRatio.mode);
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
-    setRadioValue("scalingMode", settings.scalingMode.mode);
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
 }
 
 export function setUpdateListenerToGUI(listener: () => void) {
-    getElement("enabled", HTMLInputElement).addEventListener("change", listener);
-
     setChangeListenerToRadioGroup("sourceRatio", listener);
-
+    setChangeListenerToRadioGroup("targetRatio", listener);
+    setChangeListenerToRadioGroup("scalingMode", listener);
+    getElement("enabled", HTMLInputElement).addEventListener("change", listener);
     getElement("sourceCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("sourceCustomY", HTMLInputElement).addEventListener("input", listener);
-
-    setChangeListenerToRadioGroup("targetRatio", listener);
-
     getElement("targetCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("targetCustomY", HTMLInputElement).addEventListener("input", listener);
-
-    setChangeListenerToRadioGroup("scalingMode", listener);
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
 
     //getElement("rememberPerVideo", HTMLInputElement).addEventListener("change", sendSettings);
