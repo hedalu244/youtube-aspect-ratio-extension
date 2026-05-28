@@ -1,11 +1,4 @@
-
-リロード時とかに比率を更新
+contentがロードされていないときにpopup側で設定が読み込めない settimgManagerの情報の流れを変更する必要がある
 
 元動画と要素サイズが一致していないとき、showAll、coverAllの挙動がおかしい。
 判定戦略を変える必要がある。
-
-
-windowResizedでも比率を更新
-content側にsettingを保持する必要がある？
-
-全画面表示
