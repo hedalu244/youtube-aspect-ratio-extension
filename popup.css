@@ -13,6 +13,7 @@ body {
   color: var(--text-color);
   background: var(--bg-color);
   font-size: 14px;
+  line-height: 24px;
 }
 
 section {
@@ -29,40 +30,62 @@ h2 {
 label {
   display: flex;
   padding: 0 10px;
-  height: 24px;
-  line-height: 24px;
-  border-radius: 12px;
+  height: 1lh;
+  gap: 6px;
+}
+label:has(input[type="checkbox"]),
+label:has(input[type="number"]) {
+  align-items: center;
+  height: 1.4lh;
 }
 
-
-.checkbox-row {
-  margin-top: 8px;
-}
-
+/* Radio button styles */
 input[type="radio"] {
   display: none;
 }
 
-label:has(input[type="radio"]) {
+.radio-wrapper {
+  position: relative;
   margin: 0 15px;
-  transition: .3s;
+}
+.radio-wrapper::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 1lh;
+  top: 0;
+  border-radius: 0.5lh;
+  background-color: var(--accent-color);
+  transition: .25s;
+  z-index: -1;
+}
+.radio-wrapper:has(label:nth-child(2)>input[type="radio"]:checked)::before {
+  top: 1lh;
+}
+.radio-wrapper:has(label:nth-child(3)>input[type="radio"]:checked)::before {
+  top: 2lh;
+}
+.radio-wrapper:has(label:nth-child(4)>input[type="radio"]:checked)::before {
+  top: 3lh;
+}
+/* 本当は末尾以外に背の高い行があるとズレるけど... */
+.radio-wrapper:has(label>input[type="radio"]:checked~input[type="checkbox"])::before,
+.radio-wrapper:has(label>input[type="radio"]:checked~input[type="number"])::before {
+  height: 1.4lh;
+  border-radius: 0.7lh;
+}
+
+label:has(input[type="radio"]) {
+  transition: .25s;
 }
 
 label:has(input[type="radio"]:checked) {
-  background-color: var(--accent-color);
   font-weight: bold;
   color: #fff;
 }
 
 /* Number input styles */
-.custom-row {
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  border-radius: 16px;
-  line-height: 32px;
-}
-
 input[type="number"] {
   width: 50px;
   padding: 4px;
@@ -78,22 +101,18 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* Toggle switch styles */
-.checkbox-row {
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  border-radius: 16px;
-  line-height: 32px;
-}
-
 input[type="checkbox"] {
   display: none;
 }
 
 i {
+  --height: 1.6em;
+  --offset: 1.2em;
+  --dotsize: 1.2em;
+
   display: inline-block;
-  width: 2.8em;
-  height: 1.6em;
+  width: calc(var(--height) + var(--offset));
+  height: var(--height);
   border-radius: 0.8em;
   vertical-align: middle;
   transition: .25s .09s;
@@ -103,10 +122,10 @@ i {
   &:after {
     content: " ";
     display: block;
-    width: 1.2em;
-    height: 1.2em;
-    top: 0.2em;
-    left: 0.2em;
+    width: var(--dotsize);
+    height: var(--dotsize);
+    top: calc((var(--height) - var(--dotsize)) / 2);
+    left: calc((var(--height) - var(--dotsize)) / 2);
     border-radius: 50%;
     background: #fff;
     position: absolute;
@@ -119,5 +138,5 @@ input[type="checkbox"]:checked+i {
 }
 
 input[type="checkbox"]:checked+i:after {
-  transform: translateX(1.2em);
+  transform: translateX(var(--offset));
 }
