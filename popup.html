@@ -9,12 +9,12 @@
 
 <body>
     <label class="checkbox-row">
-        <input type="checkbox" id="enabled">
+        <input type="checkbox" id="enabled" disabled>
         <i></i>
         Enable
     </label>
 
-    <div id="hideWhenDisabled">
+    <div id="hideWhenDisabled" style="display: none;">
         <!--
         <label class="checkbox-row">
             <input type="checkbox" id="rememberPerVideo">
@@ -66,6 +66,14 @@
                 Manual
                 <input type="number" id="manualScale" min="1" step="1" value="100">
                 %
+            </label>
+        </section>
+
+        <section>
+            <label class="checkbox-row">
+                <input type="checkbox" id="remember">
+                <i></i>
+                Remember settings for this video
             </label>
         </section>
     </div>

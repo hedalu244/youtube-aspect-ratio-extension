@@ -41,49 +41,6 @@
     return `${best.x}:${best.y}`;
   }
 
-  // src/settingData.ts
-  function generateDefaultSetting() {
-    return {
-      enabled: true,
-      sourceRatio: {
-        mode: "auto",
-        customX: "1",
-        customY: "1"
-      },
-      targetRatio: {
-        mode: "original",
-        customX: "1",
-        customY: "1"
-      },
-      scalingMode: {
-        mode: "showAll",
-        manualScale: "100"
-      }
-    };
-  }
-
-  // src/settingManager.ts
-  async function loadGlobalSettings() {
-    const result = await chrome.storage.sync.get("globalSettings");
-    return await result.globalSettings || generateDefaultSetting();
-  }
-  async function saveGlobalSettings(settings) {
-    await chrome.storage.sync.set({ globalSettings: settings });
-  }
-  async function saveSettings(settings) {
-    await saveGlobalSettings(settings);
-  }
-  async function loadSettings() {
-    try {
-      const settings = await loadGlobalSettings();
-      console.log("Settings loaded successfully");
-      return settings;
-    } catch (error) {
-      console.warn("Failed to load settings", error);
-      return generateDefaultSetting();
-    }
-  }
-
   // src/gui.ts
   function getElement(id, constructor) {
     const element = document.getElementById(id);
@@ -107,14 +64,6 @@
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     radios.forEach((radio) => radio.addEventListener("change", handler));
   }
-  function updateHideStatus() {
-    const hideWhenDisabled = getElement("hideWhenDisabled", HTMLDivElement);
-    if (getElement("enabled", HTMLInputElement).checked) {
-      hideWhenDisabled.style.display = "block";
-    } else {
-      hideWhenDisabled.style.display = "none";
-    }
-  }
   function showDetectedRatio(ratio) {
     getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
   }
@@ -134,11 +83,24 @@
       scalingMode: {
         mode: getRadioValue("scalingMode"),
         manualScale: getElement("manualScale", HTMLInputElement).value
-      }
+      },
+      remember: getElement("remember", HTMLInputElement).checked
     };
   }
-  async function showSettings() {
-    const settings = await loadSettings();
+  function updateHideStatus() {
+    const hideWhenDisabled = getElement("hideWhenDisabled", HTMLDivElement);
+    if (getElement("enabled", HTMLInputElement).checked) {
+      hideWhenDisabled.style.display = "block";
+    } else {
+      hideWhenDisabled.style.display = "none";
+    }
+  }
+  function setupGUI() {
+    getElement("enabled", HTMLInputElement).disabled = false;
+    getElement("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
+    updateHideStatus();
+  }
+  function showSettings(settings) {
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
     setRadioValue("targetRatio", settings.targetRatio.mode);
     setRadioValue("scalingMode", settings.scalingMode.mode);
@@ -148,10 +110,7 @@
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
-    updateHideStatus();
-  }
-  function setupGUI() {
-    getElement("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
+    getElement("remember", HTMLInputElement).checked = settings.remember;
     updateHideStatus();
   }
   function setUpdateListenerToGUI(listener) {
@@ -164,28 +123,39 @@
     getElement("targetCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("targetCustomY", HTMLInputElement).addEventListener("input", listener);
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
+    getElement("remember", HTMLInputElement).addEventListener("input", listener);
+  }
+
+  // src/settingManager.ts
+  async function saveSettings(settings) {
+    await chrome.storage.sync.set({ globalSettings: settings });
   }
 
   // src/popup.ts
   console.log("Popup script loaded");
-  function messageHandler(message) {
+  async function messageHandler(message) {
     console.log("Received message in popup script", message);
     switch (message.type) {
       case "DETECTED_RATIO":
         showDetectedRatio(message.ratio);
+        return;
+      case "CURRENT_SETTINGS":
+        setupGUI();
+        showSettings(message.settings);
+        setUpdateListenerToGUI(async () => {
+          const settings = getSettingsFromGUI();
+          if (settings.remember) {
+            await sendMessageToActiveTab({ type: "REQUEST_REMEMBER_SETTINGS", settings });
+          } else {
+            await sendMessageToActiveTab({ type: "REQUEST_FORGET_SETTINGS" });
+            await saveSettings(settings);
+          }
+          await sendMessageToAllTabs({ type: "SETTINGS_UPDATED" });
+        });
+        sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
         break;
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
-  sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
-  setupGUI();
-  showSettings();
-  setUpdateListenerToGUI(async () => {
-    try {
-      await saveSettings(getSettingsFromGUI());
-      await sendMessageToAllTabs({ type: "SETTINGS_UPDATED" });
-    } catch (error) {
-      console.warn("Failed to save settings", error);
-    }
-  });
+  sendMessageToActiveTab({ type: "REQUEST_CURRENT_SETTINGS" });
 })();

@@ -39,7 +39,8 @@
       scalingMode: {
         mode: "showAll",
         manualScale: "100"
-      }
+      },
+      remember: false
     };
   }
   function normalizeSourceRatio(mode, customX, customY, detectedRatio) {
@@ -97,6 +98,46 @@
       scalingMode: mode,
       manualScale: mode === "manual" ? parseFloat(rawSettings.scalingMode.manualScale) / 100 : 1
     };
+  }
+
+  // src/settingManager.ts
+  async function loadGlobalSettings() {
+    const result = await chrome.storage.sync.get("globalSettings");
+    const globalSettings = result.globalSettings || generateDefaultSetting();
+    return { ...globalSettings, remember: false };
+  }
+  async function loadURLSettings(url) {
+    const result = await chrome.storage.sync.get("urlSettings");
+    const urlSettings = (result.urlSettings || {})[url] || null;
+    if (!urlSettings) return null;
+    return { ...urlSettings, remember: true };
+  }
+  async function rememberSettings(url, settings) {
+    const result = await chrome.storage.sync.get("urlSettings");
+    const urlSettings = result.urlSettings || {};
+    urlSettings[url] = settings;
+    await chrome.storage.sync.set({ urlSettings });
+  }
+  async function forgetSettings(url) {
+    const result = await chrome.storage.sync.get("urlSettings");
+    const urlSettings = result.urlSettings || {};
+    delete urlSettings[url];
+    await chrome.storage.sync.set({ urlSettings });
+  }
+  async function loadSettings(url) {
+    try {
+      const urlSettings = await loadURLSettings(url);
+      if (urlSettings) {
+        console.log("URL-specific settings found, using them", urlSettings);
+        return urlSettings;
+      }
+      const globalSettings = await loadGlobalSettings();
+      console.log("Settings loaded successfully");
+      return globalSettings;
+    } catch (error) {
+      console.warn("Failed to load settings", error);
+      return generateDefaultSetting();
+    }
   }
 
   // src/video.ts
@@ -165,28 +206,12 @@
     }
   }
 
-  // src/settingManager.ts
-  async function loadGlobalSettings() {
-    const result = await chrome.storage.sync.get("globalSettings");
-    return await result.globalSettings || generateDefaultSetting();
-  }
-  async function loadSettings() {
-    try {
-      const settings = await loadGlobalSettings();
-      console.log("Settings loaded successfully");
-      return settings;
-    } catch (error) {
-      console.warn("Failed to load settings", error);
-      return generateDefaultSetting();
-    }
-  }
-
   // src/videoDetector.ts
   var currentVideos = [];
   function handleNewVideo(video) {
     const handler = async () => {
       updateMainVideo();
-      applySettingsToVideo(await loadSettings(), video);
+      applySettingsToVideo(await loadSettings(window.location.href), video);
     };
     video.addEventListener("loadedmetadata", handler);
     handler();
@@ -214,7 +239,7 @@
   }
   async function applySettingsToAllVideos() {
     for (const video of currentVideos)
-      applySettingsToVideo(await loadSettings(), video);
+      applySettingsToVideo(await loadSettings(window.location.href), video);
   }
 
   // src/content.ts
@@ -222,7 +247,7 @@
   function sendDetectedRatioToPopup() {
     sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectMainAspectRatio() });
   }
-  function messageHandler(message) {
+  async function messageHandler(message) {
     console.log("Received message in content script", message);
     switch (message.type) {
       case "REQUEST_DETECTED_RATIO":
@@ -231,6 +256,15 @@
       case "SETTINGS_UPDATED":
         applySettingsToAllVideos();
         break;
+      case "REQUEST_REMEMBER_SETTINGS":
+        rememberSettings(window.location.href, message.settings);
+        break;
+      case "REQUEST_FORGET_SETTINGS":
+        forgetSettings(window.location.href);
+        break;
+      case "REQUEST_CURRENT_SETTINGS":
+        const settings = await loadSettings(window.location.href);
+        sendMessageToPopup({ type: "CURRENT_SETTINGS", settings });
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);

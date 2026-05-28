@@ -1,14 +1,29 @@
+import { RawSettings } from "./settingData";
+
 declare const chrome: any;
 
 export type MessageToContent = {
     type: "SETTINGS_UPDATED";
 } | {
     type: "REQUEST_DETECTED_RATIO";
+} | {
+    type: "REQUEST_REMEMBER_SETTINGS";
+    settings: RawSettings;
+} | {
+    type: "REQUEST_FORGET_SETTINGS";
+} | {
+    type: "REQUEST_CURRENT_SETTINGS";
 };
 
 export type MessageToPopup = {
     type: "DETECTED_RATIO";
     ratio: number;
+} | {
+    type: "ACTIVE_URL";
+    url: string;
+} | {
+    type: "CURRENT_SETTINGS";
+    settings: RawSettings;
 };
 
 export async function sendMessageToActiveTab(message: MessageToContent) {

@@ -1,6 +1,5 @@
 import { RawSettings } from "./settingData";
 import { ratioToString } from "./ratio";
-import { loadSettings } from "./settingManager";
 
 function getElement<T extends HTMLElement>(id: string, constructor: { new(): T; }): T {
     const element = document.getElementById(id);
@@ -28,19 +27,9 @@ function setChangeListenerToRadioGroup(name: string, handler: () => void) {
     radios.forEach(radio => radio.addEventListener("change", handler));
 }
 
-function updateHideStatus() {
-    const hideWhenDisabled = getElement("hideWhenDisabled", HTMLDivElement);
-    if (getElement("enabled", HTMLInputElement).checked) {
-        hideWhenDisabled.style.display = "block";
-    } else {
-        hideWhenDisabled.style.display = "none";
-    }
-}
-
 export function showDetectedRatio(ratio: number) {
     getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
 }
-
 
 export function getSettingsFromGUI(): RawSettings {
     return {
@@ -61,13 +50,28 @@ export function getSettingsFromGUI(): RawSettings {
         scalingMode: {
             mode: getRadioValue("scalingMode"),
             manualScale: getElement("manualScale", HTMLInputElement).value
-        }
+        },
+
+        remember: getElement("remember", HTMLInputElement).checked
     };
 }
 
-export async function showSettings() {
-    const settings = await loadSettings();
-    
+function updateHideStatus() {
+    const hideWhenDisabled = getElement("hideWhenDisabled", HTMLDivElement);
+    if (getElement("enabled", HTMLInputElement).checked) {
+        hideWhenDisabled.style.display = "block";
+    } else {
+        hideWhenDisabled.style.display = "none";
+    }
+}
+
+export function setupGUI() {
+    getElement("enabled", HTMLInputElement).disabled = false;
+    getElement("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
+    updateHideStatus();
+}
+
+export function showSettings(settings: RawSettings) {
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
     setRadioValue("targetRatio", settings.targetRatio.mode);
     setRadioValue("scalingMode", settings.scalingMode.mode);
@@ -77,11 +81,8 @@ export async function showSettings() {
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
-    updateHideStatus();
-}
+    getElement("remember", HTMLInputElement).checked = settings.remember;
 
-export function setupGUI() {
-    getElement("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
     updateHideStatus();
 }
 
@@ -95,6 +96,5 @@ export function setUpdateListenerToGUI(listener: () => void) {
     getElement("targetCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("targetCustomY", HTMLInputElement).addEventListener("input", listener);
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
-
-    //getElement("rememberPerVideo", HTMLInputElement).addEventListener("change", sendSettings);
+    getElement("remember", HTMLInputElement).addEventListener("input", listener);
 }

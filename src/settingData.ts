@@ -16,6 +16,7 @@ export type RawSettings = {
         mode: string;
         manualScale: string;
     };
+    remember: boolean;
 };
 
 export type Settings = {
@@ -44,7 +45,8 @@ export function generateDefaultSetting(): RawSettings {
         scalingMode: {
             mode: "showAll",
             manualScale: "100"
-        }
+        },
+        remember: false
     };
 }
 

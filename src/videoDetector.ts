@@ -8,7 +8,7 @@ let currentVideos: HTMLVideoElement[] = [];
 function handleNewVideo(video: HTMLVideoElement) {
     const handler = async () => {
         updateMainVideo();
-        applySettingsToVideo(await loadSettings(), video);
+        applySettingsToVideo(await loadSettings(window.location.href), video);
     };
 
     // メタデータの読み込み時（動画サイズ確定時）にhandlerを呼ぶ
@@ -49,5 +49,5 @@ export function observeDocument() {
 
 export async function applySettingsToAllVideos() {
     for (const video of currentVideos)
-        applySettingsToVideo(await loadSettings(), video);
+        applySettingsToVideo(await loadSettings(window.location.href), video);
 }
