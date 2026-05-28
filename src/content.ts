@@ -7,22 +7,15 @@ declare const chrome: any;
 console.log("YouTube Aspect Ratio content script loaded!");
 
 let currentSettings = generateDefaultSetting();
-let currentVideo: HTMLVideoElement | null = null;
-
-function apply() {
-    if (!currentVideo) {
-        console.warn("Cannot apply settings because video element is not found");
-        return;
-    }
-    applySettingsToVideo(currentSettings, currentVideo);
-    sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(currentVideo) });
-}
+let currentVideos: HTMLVideoElement[] = [];
+// detectedとして比率を測定してUIに表示するためのもの（ページ内で最大のものが良い）
+let mainVideo: HTMLVideoElement | null = null;
 
 function messageHandler(message: MessagePtoC) {
     console.log("Received message in content script", message);
 
     if (message.type === "REQUEST_DETECTED_RATIO") {
-        sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(currentVideo) });
+        sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(mainVideo) });
         return;
     }
 
@@ -32,7 +25,7 @@ function messageHandler(message: MessagePtoC) {
     }
 
     if (message.type === "REQUEST_APPLY_SETTINGS") {
-        apply();
+        for (const video of currentVideos) applySettingsToVideo(currentSettings, video);
         return;
     }
 
@@ -43,7 +36,7 @@ function messageHandler(message: MessagePtoC) {
             console.warn("Failed to save settings", error);
         });
 
-        apply();
+        for (const video of currentVideos) applySettingsToVideo(currentSettings, video);
         return;
     }
 }
@@ -59,49 +52,57 @@ function loadSettings() {
     });
 }
 
-function checkNewVideo(): boolean {
-    const video = document.querySelector("video");
-    if (video) {
-        handleNewVideo(video);
-        return true;
+function updateMainVideo() {
+    // 最大のものをmainVideoにする
+    const new_videos = document.querySelectorAll("video");
+
+    // 線形探索
+    let maxArea = 0;
+    let new_mainVideo: HTMLVideoElement | null = null;
+    for (const video of new_videos) {
+        const area = video.videoWidth * video.videoHeight;
+        if (area > maxArea) {
+            maxArea = area;
+            new_mainVideo = video;
+        }
     }
-    return false;
+
+    // 変更があったときにはポップアップUIに通知（受信されるかはわからない）
+    if (new_mainVideo !== mainVideo) {
+        mainVideo = new_mainVideo;
+        sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(mainVideo) });
+    }
 }
 
-// 動画要素が見つかったらそれを監視して設定を適用する。見つからなければ、動画要素が追加されるのを待つ。
+// 新しいvideo要素を見つけたときの処理
 function handleNewVideo(video: HTMLVideoElement) {
-    currentVideo = video;
+    const handler = () => {
+        applySettingsToVideo(currentSettings, video);
+        updateMainVideo(); // メタデータが読み込まれてないと判定できないのでここで呼ぶ
+    };
 
-    // 即時、メタデータが読み込まれた時点、属性が変わった時点、のそれぞれでapplyを呼ぶ
-    apply();
-    video.addEventListener("loadedmetadata", () => apply());
-    const observer = new MutationObserver(() => { apply(); });
-    observer.observe(video, { attributes: true });
-
-    // videoエレメントが消えたらwaitForNewVideoを呼ぶ
-    const disconnectObserver = new MutationObserver(() => {
-        if (video.isConnected) return;
-        currentVideo = null;
-        observer.disconnect();
-        disconnectObserver.disconnect();
-        waitForNewVideo();
-    });
-    disconnectObserver.observe(document.documentElement, { childList: true, subtree: true });
+    // メタデータの読み込み時（動画サイズ確定時）に呼ぶ
+    video.addEventListener("loadedmetadata", handler);
+    // すでにメタデータが読み込まれている場合、loadedmetadataは以降発火しないので、一度呼んでおく
+    handler();
+    // 以降、変更があったときにも呼ぶ
+    new MutationObserver(handler).observe(video, { attributes: true });
 }
 
-function waitForNewVideo() {
-    if (checkNewVideo()) return; // 最初から動画がある場合はそれを監視して終わり
-
+// ページ内のvideo要素を監視する
+function observeDocument() {
     const observer = new MutationObserver(() => {
-        if (checkNewVideo()) observer.disconnect(); // 一つ動画が見つかったらdocumentの監視をやめる
+        const new_videos = document.querySelectorAll("video");
+        for (const video of new_videos) {
+            if (!currentVideos.includes(video)) {
+                currentVideos.push(video);
+                handleNewVideo(video);
+            }
+        }
     });
-    
+
     observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 loadSettings();
-apply();
-waitForNewVideo();
-
-// YouTubeのページ遷移完了イベントを待ち受ける
-document.addEventListener("yt-navigate-finish", waitForNewVideo); 
+observeDocument();

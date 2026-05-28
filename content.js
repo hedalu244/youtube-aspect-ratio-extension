@@ -124,19 +124,12 @@
   // src/content.ts
   console.log("YouTube Aspect Ratio content script loaded!");
   var currentSettings = generateDefaultSetting();
-  var currentVideo = null;
-  function apply() {
-    if (!currentVideo) {
-      console.warn("Cannot apply settings because video element is not found");
-      return;
-    }
-    applySettingsToVideo(currentSettings, currentVideo);
-    sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(currentVideo) });
-  }
+  var currentVideos = [];
+  var mainVideo = null;
   function messageHandler(message) {
     console.log("Received message in content script", message);
     if (message.type === "REQUEST_DETECTED_RATIO") {
-      sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(currentVideo) });
+      sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(mainVideo) });
       return;
     }
     if (message.type === "REQUEST_CURRENT_SETTINGS") {
@@ -144,7 +137,7 @@
       return;
     }
     if (message.type === "REQUEST_APPLY_SETTINGS") {
-      apply();
+      for (const video of currentVideos) applySettingsToVideo(currentSettings, video);
       return;
     }
     if (message.type === "SETTINGS_UPDATED") {
@@ -152,7 +145,7 @@
       saveGlobalSettings(currentSettings).catch((error) => {
         console.warn("Failed to save settings", error);
       });
-      apply();
+      for (const video of currentVideos) applySettingsToVideo(currentSettings, video);
       return;
     }
   }
@@ -165,40 +158,43 @@
       console.warn("Failed to load settings", error);
     });
   }
-  function checkNewVideo() {
-    const video = document.querySelector("video");
-    if (video) {
-      handleNewVideo(video);
-      return true;
+  function updateMainVideo() {
+    const new_videos = document.querySelectorAll("video");
+    let maxArea = 0;
+    let new_mainVideo = null;
+    for (const video of new_videos) {
+      const area = video.videoWidth * video.videoHeight;
+      if (area > maxArea) {
+        maxArea = area;
+        new_mainVideo = video;
+      }
     }
-    return false;
+    if (new_mainVideo !== mainVideo) {
+      mainVideo = new_mainVideo;
+      sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(mainVideo) });
+    }
   }
   function handleNewVideo(video) {
-    currentVideo = video;
-    apply();
-    video.addEventListener("loadedmetadata", () => apply());
-    const observer = new MutationObserver(() => {
-      apply();
-    });
-    observer.observe(video, { attributes: true });
-    const disconnectObserver = new MutationObserver(() => {
-      if (video.isConnected) return;
-      currentVideo = null;
-      observer.disconnect();
-      disconnectObserver.disconnect();
-      waitForNewVideo();
-    });
-    disconnectObserver.observe(document.documentElement, { childList: true, subtree: true });
+    const handler = () => {
+      applySettingsToVideo(currentSettings, video);
+      updateMainVideo();
+    };
+    video.addEventListener("loadedmetadata", handler);
+    handler();
+    new MutationObserver(handler).observe(video, { attributes: true });
   }
-  function waitForNewVideo() {
-    if (checkNewVideo()) return;
+  function observeDocument() {
     const observer = new MutationObserver(() => {
-      if (checkNewVideo()) observer.disconnect();
+      const new_videos = document.querySelectorAll("video");
+      for (const video of new_videos) {
+        if (!currentVideos.includes(video)) {
+          currentVideos.push(video);
+          handleNewVideo(video);
+        }
+      }
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   }
   loadSettings();
-  apply();
-  waitForNewVideo();
-  document.addEventListener("yt-navigate-finish", waitForNewVideo);
+  observeDocument();
 })();
