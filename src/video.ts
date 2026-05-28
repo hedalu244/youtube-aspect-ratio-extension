@@ -1,5 +1,6 @@
 import { normalizeSettings, RawSettings } from "./settingData";
 
+// sourceRatioとtargetRatio、modeをもとにscaleXとscaleYを計算する。
 function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" | "coverAll" | "manual", manualScale = 1): [number, number] {
     switch (mode) {
         case "showAll":
@@ -18,14 +19,15 @@ function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" 
     }
 }
 
+// <video> にscaleを適用する。
 function applyScale(video: HTMLVideoElement, scaleX: number, scaleY: number) {
     video.style.transform = `scale(${scaleX}, ${scaleY})`;
-    console.log(`Applied scale x:${scaleX} y:${scaleY} to `, video);
+    console.log(`Applied scale x:${scaleX} y:${scaleY}`);
 }
 
+// <video> に設定を適用する。
 export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElement) {
     const s = normalizeSettings(settings, detectVideoAspectRatio(video));
-    console.log("Normalized settings", s);
     if (!s.enabled) {
         applyScale(video, 1, 1);
     } else {
@@ -34,6 +36,7 @@ export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElem
     }
 }
 
+// <video>のアスペクト比を検出する。metadataが読み込まれていないときは16:9を返す。
 export function detectVideoAspectRatio(video: HTMLVideoElement): number {
     if (video.videoHeight === 0 || video.videoWidth === 0) {
         console.warn("Video metadata not loaded yet, cannot detect aspect ratio. Defaulting to 16:9.");

@@ -1,3 +1,5 @@
+
+// "4:3"のような文字列を4/3=1.3333...といった数値に変換する。
 export function parseRatio(str: string): number {
     const splited = str.split(":");
     

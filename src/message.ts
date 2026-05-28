@@ -26,6 +26,7 @@ export type MessageToPopup = {
     settings: RawSettings;
 };
 
+// activeなタブのcontent scriptにメッセージを送る。
 export async function sendMessageToActiveTab(message: MessageToContent) {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -41,7 +42,7 @@ export async function sendMessageToActiveTab(message: MessageToContent) {
     }
 }
 
-
+// すべてのタブのcontent scriptにメッセージを送る。
 export async function sendMessageToAllTabs(message: MessageToContent) {
     const tabs = await chrome.tabs.query({ url: ["https://www.youtube.com/*"] });
 
@@ -57,6 +58,7 @@ export async function sendMessageToAllTabs(message: MessageToContent) {
     }
 }
 
+// popup scriptにメッセージを送る。
 export async function sendMessageToPopup(message: MessageToPopup) {
     try {
         void chrome.runtime.sendMessage(message);

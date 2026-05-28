@@ -29,6 +29,7 @@ export type Settings = {
     manualScale: number;
 };
 
+// デフォルトの設定を作る
 export function generateDefaultSetting(): RawSettings {
     return {
         enabled: true,
@@ -46,7 +47,7 @@ export function generateDefaultSetting(): RawSettings {
             mode: "showAll",
             manualScale: "100"
         },
-        remember: false
+        remember: false // 重要。これがtrueだとすべての動画の設定が保存されてしまい、ストレージに悪影響そう
     };
 }
 
@@ -92,7 +93,7 @@ function normalizeTargetRatio(mode: string, customX: string, customY: string, so
     }
 }
 
-
+// RawSettingsから不要な情報を削除して正規化する。
 export function normalizeSettings(rawSettings: RawSettings, detectedRatio: number): Settings {
     if (!rawSettings.enabled) {
         return { enabled: false };

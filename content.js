@@ -41,6 +41,7 @@
         manualScale: "100"
       },
       remember: false
+      // 重要。これがtrueだとすべての動画の設定が保存されてしまい、ストレージに悪影響そう
     };
   }
   function normalizeSourceRatio(mode, customX, customY, detectedRatio) {
@@ -124,15 +125,13 @@
     delete urlSettings[url];
     await chrome.storage.sync.set({ urlSettings });
   }
-  async function loadSettings(url) {
+  async function loadCurrentSettings(url) {
     try {
       const urlSettings = await loadURLSettings(url);
       if (urlSettings) {
-        console.log("URL-specific settings found, using them", urlSettings);
         return urlSettings;
       }
       const globalSettings = await loadGlobalSettings();
-      console.log("Settings loaded successfully");
       return globalSettings;
     } catch (error) {
       console.warn("Failed to load settings", error);
@@ -160,11 +159,10 @@
   }
   function applyScale(video, scaleX, scaleY) {
     video.style.transform = `scale(${scaleX}, ${scaleY})`;
-    console.log(`Applied scale x:${scaleX} y:${scaleY} to `, video);
+    console.log(`Applied scale x:${scaleX} y:${scaleY}`);
   }
   function applySettingsToVideo(settings, video) {
     const s = normalizeSettings(settings, detectVideoAspectRatio(video));
-    console.log("Normalized settings", s);
     if (!s.enabled) {
       applyScale(video, 1, 1);
     } else {
@@ -182,13 +180,6 @@
 
   // src/mainVideoDetector.ts
   var mainVideo = null;
-  function detectMainAspectRatio() {
-    if (!mainVideo) {
-      console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
-      return 16 / 9;
-    }
-    return detectVideoAspectRatio(mainVideo);
-  }
   function updateMainVideo() {
     const new_videos = document.querySelectorAll("video");
     let maxArea = 0;
@@ -205,13 +196,20 @@
       sendDetectedRatioToPopup();
     }
   }
+  function detectMainAspectRatio() {
+    if (!mainVideo) {
+      console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
+      return 16 / 9;
+    }
+    return detectVideoAspectRatio(mainVideo);
+  }
 
   // src/videoDetector.ts
   var currentVideos = [];
   function handleNewVideo(video) {
     const handler = async () => {
       updateMainVideo();
-      applySettingsToVideo(await loadSettings(window.location.href), video);
+      applySettingsToVideo(await loadCurrentSettings(window.location.href), video);
     };
     video.addEventListener("loadedmetadata", handler);
     handler();
@@ -239,7 +237,7 @@
   }
   async function applySettingsToAllVideos() {
     for (const video of currentVideos)
-      applySettingsToVideo(await loadSettings(window.location.href), video);
+      applySettingsToVideo(await loadCurrentSettings(window.location.href), video);
   }
 
   // src/content.ts
@@ -263,7 +261,7 @@
         forgetSettings(window.location.href);
         break;
       case "REQUEST_CURRENT_SETTINGS":
-        const settings = await loadSettings(window.location.href);
+        const settings = await loadCurrentSettings(window.location.href);
         sendMessageToPopup({ type: "CURRENT_SETTINGS", settings });
     }
   }

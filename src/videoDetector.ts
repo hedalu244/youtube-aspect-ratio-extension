@@ -1,5 +1,5 @@
 import { updateMainVideo } from "./mainVideoDetector";
-import { loadSettings } from "./settingManager";
+import { loadCurrentSettings } from "./settingManager";
 import { applySettingsToVideo } from "./video";
 
 let currentVideos: HTMLVideoElement[] = [];
@@ -8,7 +8,7 @@ let currentVideos: HTMLVideoElement[] = [];
 function handleNewVideo(video: HTMLVideoElement) {
     const handler = async () => {
         updateMainVideo();
-        applySettingsToVideo(await loadSettings(window.location.href), video);
+        applySettingsToVideo(await loadCurrentSettings(window.location.href), video);
     };
 
     // メタデータの読み込み時（動画サイズ確定時）にhandlerを呼ぶ
@@ -19,6 +19,7 @@ function handleNewVideo(video: HTMLVideoElement) {
     new MutationObserver(handler).observe(video, { attributes: true });
 }
 
+// video要素が削除されたときの処理
 function handleRemovedVideo(video: HTMLVideoElement) {
     // observerを破棄するなどの処理が必要かもしれないが、とりあえずは何もしない
 }
@@ -47,7 +48,8 @@ export function observeDocument() {
     observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
+// ページ内のすべてのvideo要素に設定を適用する。
 export async function applySettingsToAllVideos() {
     for (const video of currentVideos)
-        applySettingsToVideo(await loadSettings(window.location.href), video);
+        applySettingsToVideo(await loadCurrentSettings(window.location.href), video);
 }

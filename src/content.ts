@@ -1,5 +1,5 @@
 import { MessageToContent, sendMessageToPopup } from "./message";
-import { forgetSettings, loadSettings, rememberSettings } from "./settingManager";
+import { forgetSettings, loadCurrentSettings, rememberSettings } from "./settingManager";
 import { applySettingsToAllVideos, observeDocument } from "./videoDetector";
 import { detectMainAspectRatio } from "./mainVideoDetector";
 
@@ -26,10 +26,9 @@ async function messageHandler(message: MessageToContent) {
             break;
         case "REQUEST_FORGET_SETTINGS":
             forgetSettings(window.location.href);
-            // todo
             break;
         case "REQUEST_CURRENT_SETTINGS":
-            const settings = await loadSettings(window.location.href);
+            const settings = await loadCurrentSettings(window.location.href);
             sendMessageToPopup({ type: "CURRENT_SETTINGS", settings });
     }
 }

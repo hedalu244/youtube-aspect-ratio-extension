@@ -5,14 +5,7 @@ import { detectVideoAspectRatio } from "./video";
 // ページ内で最大のVideo要素。主にdetectedとして比率を測定してUIに表示するためのもの
 let mainVideo: HTMLVideoElement | null = null;
 
-export function detectMainAspectRatio() {
-    if (!mainVideo) {
-        console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
-        return 16 / 9;
-    }
-    return detectVideoAspectRatio(mainVideo);
-}
-
+// mainVideoを最大のものに維持する。変更があったときにはpopupに通知する。
 export function updateMainVideo() {
     // 最大のものをmainVideoにする
     const new_videos = document.querySelectorAll("video");
@@ -33,4 +26,13 @@ export function updateMainVideo() {
         mainVideo = new_mainVideo;
         sendDetectedRatioToPopup();
     }
+}
+
+// メイン要素のアスペクト比を検出する。mainVideoが見つからないときは16:9を返す。
+export function detectMainAspectRatio() {
+    if (!mainVideo) {
+        console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
+        return 16 / 9;
+    }
+    return detectVideoAspectRatio(mainVideo);
 }
