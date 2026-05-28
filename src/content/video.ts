@@ -27,7 +27,7 @@ function computeScale(sourceRatio: number, targetRatio: number, videoRatio: numb
     }
 
     const scaleX_fitWidth = Math.max(1, videoRatio / sourceRatio) * Math.max(1, wrapperRatio / videoRatio);
-    const scaleY_fitHeight = 1 / Math.min(1, videoRatio / sourceRatio) / Math.min(1, wrapperRatio / videoRatio);
+    const scaleY_fitHeight = Math.max(1, sourceRatio / videoRatio) * Math.max(1, videoRatio / wrapperRatio);
 
     switch (mode) {
         case "showAll": {
