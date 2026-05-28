@@ -1,5 +1,6 @@
 import { RawSettings } from "./settingData";
 import { ratioToString } from "./ratio";
+import { loadSettings } from "./settingManager";
 
 function getElement<T extends HTMLElement>(id: string, constructor: { new(): T; }): T {
     const element = document.getElementById(id);
@@ -64,7 +65,9 @@ export function getSettingsFromGUI(): RawSettings {
     };
 }
 
-export function showSettings(settings: RawSettings) {
+export async function showSettings() {
+    const settings = await loadSettings();
+    
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
     setRadioValue("targetRatio", settings.targetRatio.mode);
     setRadioValue("scalingMode", settings.scalingMode.mode);

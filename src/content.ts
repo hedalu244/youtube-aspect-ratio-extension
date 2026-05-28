@@ -1,5 +1,5 @@
 import { MessageToContent, sendMessageToPopup } from "./message";
-import { loadSettings, setCurrentSettings, getCurrentSettings } from "./settingManager";
+import { loadSettings } from "./settingManager";
 import { applySettingsToAllVideos, observeDocument } from "./videoDetector";
 import { detectMainAspectRatio } from "./mainVideoDetector";
 
@@ -11,10 +11,6 @@ export function sendDetectedRatioToPopup() {
     sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectMainAspectRatio() });
 }
 
-function sendCurrentSettingsToPopup() {
-    sendMessageToPopup({ type: "CURRENT_SETTINGS", settings: getCurrentSettings() });
-}
-
 function messageHandler(message: MessageToContent) {
     console.log("Received message in content script", message);
 
@@ -22,14 +18,7 @@ function messageHandler(message: MessageToContent) {
         case "REQUEST_DETECTED_RATIO":
             sendDetectedRatioToPopup();
             break;
-        case "REQUEST_CURRENT_SETTINGS":
-            sendCurrentSettingsToPopup();
-            break;
-        case "REQUEST_APPLY_SETTINGS":
-            applySettingsToAllVideos();
-            break;
         case "SETTINGS_UPDATED":
-            setCurrentSettings(message.settings);
             applySettingsToAllVideos();
             break;
     }
@@ -37,5 +26,4 @@ function messageHandler(message: MessageToContent) {
 
 chrome.runtime.onMessage.addListener(messageHandler);
 
-loadSettings();
 observeDocument();

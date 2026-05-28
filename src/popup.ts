@@ -1,5 +1,6 @@
-import { MessageToPopup, sendMessageToContent } from "./message";
-import { getSettingsFromGUI, showSettings, showDetectedRatio, setUpdateListenerToGUI, setupGUI } from "./gui";
+import { MessageToPopup, sendMessageToActiveTab, sendMessageToAllTabs } from "./message";
+import { getSettingsFromGUI, showDetectedRatio, setUpdateListenerToGUI, setupGUI, showSettings } from "./gui";
+import { saveSettings } from "./settingManager";
 declare const chrome: any;
 
 console.log("Popup script loaded");
@@ -11,19 +12,22 @@ function messageHandler(message: MessageToPopup) {
         case "DETECTED_RATIO":
             showDetectedRatio(message.ratio);
             break;
-        case "CURRENT_SETTINGS":
-            showSettings(message.settings);
-            break;
     }
 }
 
 chrome.runtime.onMessage.addListener(messageHandler);
 
-
-sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
-
-sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
+sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
 
 setupGUI();
 
-setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
+showSettings();
+
+setUpdateListenerToGUI(async () => {
+    try {
+        await saveSettings(getSettingsFromGUI());
+        await sendMessageToAllTabs({ type: "SETTINGS_UPDATED" });
+    } catch (error) {
+        console.warn("Failed to save settings", error);
+    }
+});

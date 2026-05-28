@@ -1,6 +1,6 @@
 (() => {
   // src/message.ts
-  async function sendMessageToContent(message) {
+  async function sendMessageToActiveTab(message) {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab?.id) {
       console.warn("No active tab found", message);
@@ -10,6 +10,19 @@
       await chrome.tabs.sendMessage(activeTab.id, message);
     } catch (error) {
       console.warn("Failed to send message to content script", message, error);
+    }
+  }
+  async function sendMessageToAllTabs(message) {
+    const tabs = await chrome.tabs.query({ url: ["https://www.youtube.com/*"] });
+    for (const tab of tabs) {
+      if (!tab.id) {
+        continue;
+      }
+      try {
+        await chrome.tabs.sendMessage(tab.id, message);
+      } catch (error) {
+        console.warn("Failed to send message to content script", { tabId: tab.id, message, error });
+      }
     }
   }
 
@@ -26,6 +39,49 @@
       if (best.score < 5e-3) break;
     }
     return `${best.x}:${best.y}`;
+  }
+
+  // src/settingData.ts
+  function generateDefaultSetting() {
+    return {
+      enabled: true,
+      sourceRatio: {
+        mode: "auto",
+        customX: "1",
+        customY: "1"
+      },
+      targetRatio: {
+        mode: "original",
+        customX: "1",
+        customY: "1"
+      },
+      scalingMode: {
+        mode: "showAll",
+        manualScale: "100"
+      }
+    };
+  }
+
+  // src/settingManager.ts
+  async function loadGlobalSettings() {
+    const result = await chrome.storage.sync.get("globalSettings");
+    return await result.globalSettings || generateDefaultSetting();
+  }
+  async function saveGlobalSettings(settings) {
+    await chrome.storage.sync.set({ globalSettings: settings });
+  }
+  async function saveSettings(settings) {
+    await saveGlobalSettings(settings);
+  }
+  async function loadSettings() {
+    try {
+      const settings = await loadGlobalSettings();
+      console.log("Settings loaded successfully");
+      return settings;
+    } catch (error) {
+      console.warn("Failed to load settings", error);
+      return generateDefaultSetting();
+    }
   }
 
   // src/gui.ts
@@ -81,7 +137,8 @@
       }
     };
   }
-  function showSettings(settings) {
+  async function showSettings() {
+    const settings = await loadSettings();
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
     setRadioValue("targetRatio", settings.targetRatio.mode);
     setRadioValue("scalingMode", settings.scalingMode.mode);
@@ -117,14 +174,18 @@
       case "DETECTED_RATIO":
         showDetectedRatio(message.ratio);
         break;
-      case "CURRENT_SETTINGS":
-        showSettings(message.settings);
-        break;
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
-  sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
-  sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
+  sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
   setupGUI();
-  setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
+  showSettings();
+  setUpdateListenerToGUI(async () => {
+    try {
+      await saveSettings(getSettingsFromGUI());
+      await sendMessageToAllTabs({ type: "SETTINGS_UPDATED" });
+    } catch (error) {
+      console.warn("Failed to save settings", error);
+    }
+  });
 })();

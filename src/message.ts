@@ -1,26 +1,17 @@
-import { RawSettings } from "./settingData";
 declare const chrome: any;
 
 export type MessageToContent = {
     type: "SETTINGS_UPDATED";
-    settings: RawSettings;
 } | {
     type: "REQUEST_DETECTED_RATIO";
-} | {
-    type: "REQUEST_CURRENT_SETTINGS";
-} | {
-    type: "REQUEST_APPLY_SETTINGS";
 };
 
 export type MessageToPopup = {
     type: "DETECTED_RATIO";
     ratio: number;
-} | {
-    type: "CURRENT_SETTINGS";
-    settings: RawSettings;
 };
 
-export async function sendMessageToContent(message: MessageToContent) {
+export async function sendMessageToActiveTab(message: MessageToContent) {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!activeTab?.id) {
@@ -32,6 +23,22 @@ export async function sendMessageToContent(message: MessageToContent) {
         await chrome.tabs.sendMessage(activeTab.id, message);
     } catch (error) {
         console.warn("Failed to send message to content script", message, error);
+    }
+}
+
+
+export async function sendMessageToAllTabs(message: MessageToContent) {
+    const tabs = await chrome.tabs.query({ url: ["https://www.youtube.com/*"] });
+
+    for (const tab of tabs) {
+        if (!tab.id) {
+            continue;
+        }
+        try {
+            await chrome.tabs.sendMessage(tab.id, message);
+        } catch (error) {
+            console.warn("Failed to send message to content script", { tabId: tab.id, message, error });
+        }
     }
 }
 

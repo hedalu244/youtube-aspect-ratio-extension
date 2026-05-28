@@ -1,14 +1,14 @@
 import { updateMainVideo } from "./mainVideoDetector";
-import { getCurrentSettings } from "./settingManager";
+import { loadSettings } from "./settingManager";
 import { applySettingsToVideo } from "./video";
 
 let currentVideos: HTMLVideoElement[] = [];
 
 // 新しいvideo要素を見つけたときの処理
 function handleNewVideo(video: HTMLVideoElement) {
-    const handler = () => {
+    const handler = async () => {
         updateMainVideo();
-        applySettingsToVideo(getCurrentSettings(), video);
+        applySettingsToVideo(await loadSettings(), video);
     };
 
     // メタデータの読み込み時（動画サイズ確定時）にhandlerを呼ぶ
@@ -29,7 +29,7 @@ export function observeDocument() {
         // 削除されたものを処理
         for (const video of currentVideos) {
             if (!video.isConnected) {
-                handleRemovedVideo(video); 
+                handleRemovedVideo(video);
             }
         }
         currentVideos = currentVideos.filter(video => video.isConnected);
@@ -47,6 +47,7 @@ export function observeDocument() {
     observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
-export function applySettingsToAllVideos() {
-    for (const video of currentVideos) applySettingsToVideo(getCurrentSettings(), video);
+export async function applySettingsToAllVideos() {
+    for (const video of currentVideos)
+        applySettingsToVideo(await loadSettings(), video);
 }

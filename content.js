@@ -99,35 +99,6 @@
     };
   }
 
-  // src/settingManager.ts
-  var currentSettings = generateDefaultSetting();
-  async function loadGlobalSettings() {
-    const result = await chrome.storage.sync.get("globalSettings");
-    return await result.globalSettings || generateDefaultSetting();
-  }
-  async function saveGlobalSettings(settings) {
-    await chrome.storage.sync.set({
-      globalSettings: settings
-    });
-  }
-  function getCurrentSettings() {
-    return currentSettings;
-  }
-  function setCurrentSettings(newSettings) {
-    currentSettings = newSettings;
-    saveGlobalSettings(currentSettings).catch((error) => {
-      console.warn("Failed to save settings", error);
-    });
-  }
-  function loadSettings() {
-    loadGlobalSettings().then((loadedSettings) => {
-      currentSettings = loadedSettings;
-      console.log("Settings loaded successfully");
-    }).catch((error) => {
-      console.warn("Failed to load settings", error);
-    });
-  }
-
   // src/video.ts
   function computeScale(sourceRatio, targetRatio, mode, manualScale = 1) {
     switch (mode) {
@@ -194,12 +165,28 @@
     }
   }
 
+  // src/settingManager.ts
+  async function loadGlobalSettings() {
+    const result = await chrome.storage.sync.get("globalSettings");
+    return await result.globalSettings || generateDefaultSetting();
+  }
+  async function loadSettings() {
+    try {
+      const settings = await loadGlobalSettings();
+      console.log("Settings loaded successfully");
+      return settings;
+    } catch (error) {
+      console.warn("Failed to load settings", error);
+      return generateDefaultSetting();
+    }
+  }
+
   // src/videoDetector.ts
   var currentVideos = [];
   function handleNewVideo(video) {
-    const handler = () => {
+    const handler = async () => {
       updateMainVideo();
-      applySettingsToVideo(getCurrentSettings(), video);
+      applySettingsToVideo(await loadSettings(), video);
     };
     video.addEventListener("loadedmetadata", handler);
     handler();
@@ -225,8 +212,9 @@
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   }
-  function applySettingsToAllVideos() {
-    for (const video of currentVideos) applySettingsToVideo(getCurrentSettings(), video);
+  async function applySettingsToAllVideos() {
+    for (const video of currentVideos)
+      applySettingsToVideo(await loadSettings(), video);
   }
 
   // src/content.ts
@@ -234,28 +222,17 @@
   function sendDetectedRatioToPopup() {
     sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectMainAspectRatio() });
   }
-  function sendCurrentSettingsToPopup() {
-    sendMessageToPopup({ type: "CURRENT_SETTINGS", settings: getCurrentSettings() });
-  }
   function messageHandler(message) {
     console.log("Received message in content script", message);
     switch (message.type) {
       case "REQUEST_DETECTED_RATIO":
         sendDetectedRatioToPopup();
         break;
-      case "REQUEST_CURRENT_SETTINGS":
-        sendCurrentSettingsToPopup();
-        break;
-      case "REQUEST_APPLY_SETTINGS":
-        applySettingsToAllVideos();
-        break;
       case "SETTINGS_UPDATED":
-        setCurrentSettings(message.settings);
         applySettingsToAllVideos();
         break;
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
-  loadSettings();
   observeDocument();
 })();
