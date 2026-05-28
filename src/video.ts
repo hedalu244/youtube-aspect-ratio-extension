@@ -1,21 +1,47 @@
 import { normalizeSettings, RawSettings } from "./settingData";
 
+
+// <video>のアスペクト比を検出する。metadataが読み込まれていないときは16:9を返す。
+export function detectVideoAspectRatio(video: HTMLVideoElement): number {
+    if (video.videoHeight === 0 || video.videoWidth === 0) {
+        return 16 / 9;
+    }
+
+    return video.videoWidth / video.videoHeight;
+}
+
+function detectWrapperAspectRatio(video: HTMLVideoElement): number {
+    const wrapper = video.closest("#movie_player") as HTMLElement | null;
+    if (!wrapper) {
+        return detectVideoAspectRatio(video);
+    }
+
+    const width = wrapper.clientWidth;
+    const height = wrapper.clientHeight;
+    return width / height;
+}
+
 // sourceRatioとtargetRatio、modeをもとにscaleXとscaleYを計算する。
-function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" | "coverAll" | "manual", manualScale = 1): [number, number] {
+function computeScale(sourceRatio: number, targetRatio: number, wrapperRatio: number, mode: "showAll" | "coverAll" | "manual", manualScale = 1): [number, number] {
+    if (mode === "manual") {
+        const r = Math.sqrt(targetRatio / sourceRatio);
+        return [manualScale * r, manualScale / r];
+    }
+
+    const scaleX_fitWidth = Math.max(1, wrapperRatio / sourceRatio);
+    const scaleY_fitHeight = Math.min(1, wrapperRatio / sourceRatio);
+
     switch (mode) {
-        case "showAll":
-            if (sourceRatio < targetRatio)
-                return [1, sourceRatio / targetRatio];
-            else
-                return [targetRatio / sourceRatio, 1];
-        case "coverAll":
-            if (sourceRatio < targetRatio)
-                return [targetRatio / sourceRatio, 1];
-            else
-                return [1, sourceRatio / targetRatio];
-        case "manual":
-            const r = Math.sqrt(targetRatio / sourceRatio);
-            return [manualScale * r, manualScale / r];
+        case "showAll": {
+            const scaleX = Math.min(scaleX_fitWidth, scaleY_fitHeight * targetRatio / sourceRatio);
+            const scaleY = scaleX * sourceRatio / targetRatio;
+            return [scaleX, scaleY];
+        }
+        case "coverAll": {
+            const scaleX = Math.max(scaleX_fitWidth, scaleY_fitHeight * targetRatio / sourceRatio);
+            const scaleY = scaleX * sourceRatio / targetRatio;
+            return [scaleX, scaleY];
+        }
     }
 }
 
@@ -26,22 +52,13 @@ function applyScale(video: HTMLVideoElement, scaleX: number, scaleY: number) {
 }
 
 // <video> に設定を適用する。
-export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElement) {
-    const s = normalizeSettings(settings, detectVideoAspectRatio(video));
-    if (!s.enabled) {
+export function applySettingsToVideo(rawSettings: RawSettings, video: HTMLVideoElement) {
+    const settings = normalizeSettings(rawSettings, detectVideoAspectRatio(video));
+    if (!settings.enabled) {
         applyScale(video, 1, 1);
     } else {
-        const [scaleX, scaleY] = computeScale(s.sourceRatio, s.targetRatio, s.scalingMode, s.manualScale);
+        const wrapperRatio = detectWrapperAspectRatio(video);
+        const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, wrapperRatio, settings.scalingMode, settings.manualScale);
         applyScale(video, scaleX, scaleY);
     }
-}
-
-// <video>のアスペクト比を検出する。metadataが読み込まれていないときは16:9を返す。
-export function detectVideoAspectRatio(video: HTMLVideoElement): number {
-    if (video.videoHeight === 0 || video.videoWidth === 0) {
-        console.warn("Video metadata not loaded yet, cannot detect aspect ratio. Defaulting to 16:9.");
-        return 16 / 9;
-    }
-
-    return video.videoWidth / video.videoHeight;
 }

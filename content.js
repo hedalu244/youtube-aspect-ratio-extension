@@ -140,42 +140,54 @@
   }
 
   // src/video.ts
-  function computeScale(sourceRatio, targetRatio, mode, manualScale = 1) {
+  function detectVideoAspectRatio(video) {
+    if (video.videoHeight === 0 || video.videoWidth === 0) {
+      return 16 / 9;
+    }
+    return video.videoWidth / video.videoHeight;
+  }
+  function detectWrapperAspectRatio(video) {
+    const wrapper = video.closest("#movie_player");
+    if (!wrapper) {
+      return detectVideoAspectRatio(video);
+    }
+    const width = wrapper.clientWidth;
+    const height = wrapper.clientHeight;
+    return width / height;
+  }
+  function computeScale(sourceRatio, targetRatio, wrapperRatio, mode, manualScale = 1) {
+    if (mode === "manual") {
+      const r = Math.sqrt(targetRatio / sourceRatio);
+      return [manualScale * r, manualScale / r];
+    }
+    const scaleX_fitWidth = Math.max(1, wrapperRatio / sourceRatio);
+    const scaleY_fitHeight = Math.min(1, wrapperRatio / sourceRatio);
     switch (mode) {
-      case "showAll":
-        if (sourceRatio < targetRatio)
-          return [1, sourceRatio / targetRatio];
-        else
-          return [targetRatio / sourceRatio, 1];
-      case "coverAll":
-        if (sourceRatio < targetRatio)
-          return [targetRatio / sourceRatio, 1];
-        else
-          return [1, sourceRatio / targetRatio];
-      case "manual":
-        const r = Math.sqrt(targetRatio / sourceRatio);
-        return [manualScale * r, manualScale / r];
+      case "showAll": {
+        const scaleX = Math.min(scaleX_fitWidth, scaleY_fitHeight * targetRatio / sourceRatio);
+        const scaleY = scaleX * sourceRatio / targetRatio;
+        return [scaleX, scaleY];
+      }
+      case "coverAll": {
+        const scaleX = Math.max(scaleX_fitWidth, scaleY_fitHeight * targetRatio / sourceRatio);
+        const scaleY = scaleX * sourceRatio / targetRatio;
+        return [scaleX, scaleY];
+      }
     }
   }
   function applyScale(video, scaleX, scaleY) {
     video.style.transform = `scale(${scaleX}, ${scaleY})`;
     console.log(`Applied scale x:${scaleX} y:${scaleY}`);
   }
-  function applySettingsToVideo(settings, video) {
-    const s = normalizeSettings(settings, detectVideoAspectRatio(video));
-    if (!s.enabled) {
+  function applySettingsToVideo(rawSettings, video) {
+    const settings = normalizeSettings(rawSettings, detectVideoAspectRatio(video));
+    if (!settings.enabled) {
       applyScale(video, 1, 1);
     } else {
-      const [scaleX, scaleY] = computeScale(s.sourceRatio, s.targetRatio, s.scalingMode, s.manualScale);
+      const wrapperRatio = detectWrapperAspectRatio(video);
+      const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, wrapperRatio, settings.scalingMode, settings.manualScale);
       applyScale(video, scaleX, scaleY);
     }
-  }
-  function detectVideoAspectRatio(video) {
-    if (video.videoHeight === 0 || video.videoWidth === 0) {
-      console.warn("Video metadata not loaded yet, cannot detect aspect ratio. Defaulting to 16:9.");
-      return 16 / 9;
-    }
-    return video.videoWidth / video.videoHeight;
   }
 
   // src/mainVideoDetector.ts
