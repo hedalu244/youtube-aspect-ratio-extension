@@ -8,64 +8,67 @@
 </head>
 
 <body>
-    <!--
-    <label class="checkbox-row">
-        <input type="checkbox" id="rememberPerVideo">
-        <i></i>
-        Remember per video
-    </label>
-    -->
-
     <label class="checkbox-row">
         <input type="checkbox" id="enabled">
         <i></i>
         Enable
     </label>
 
-    <section>
-        <h2>Source Ratio</h2>
-
-        <label><input type="radio" name="sourceRatio" value="auto"> Detected <span id="detectedRatio" style="padding-left: 20px;"></span></label>
-        <label><input type="radio" name="sourceRatio" value="4:3"> 4:3</label>
-        <label><input type="radio" name="sourceRatio" value="16:9"> 16:9</label>
-
-        <label class="custom-row">
-            <input type="radio" name="sourceRatio" value="custom">
-            Custom
-            <input type="number" id="sourceCustomX" min="1" step="1" value="4">
-            :
-            <input type="number" id="sourceCustomY" min="1" step="1" value="3">
+    <div id="hideWhenDisabled">
+        <!--
+        <label class="checkbox-row">
+            <input type="checkbox" id="rememberPerVideo">
+            <i></i>
+            Remember per video
         </label>
-    </section>
+        -->
 
-    <section>
-        <h2>Target Ratio</h2>
-        <label><input type="radio" name="targetRatio" value="original"> Original <span id="originalRatio" style="padding-left: 20px;"></span></label>
-        <label><input type="radio" name="targetRatio" value="4:3"> 4:3</label>
-        <label><input type="radio" name="targetRatio" value="16:9"> 16:9</label>
+        <section>
+            <h2>Source Ratio</h2>
 
-        <label class="custom-row">
-            <input type="radio" name="targetRatio" value="custom">
-            Custom
-            <input type="number" id="targetCustomX" min="1" step="1" value="16">
-            :
-            <input type="number" id="targetCustomY" min="1" step="1" value="9">
-        </label>
-    </section>
+            <label><input type="radio" name="sourceRatio" value="auto"> Detected <span id="detectedRatio"
+                    style="padding-left: 20px;"></span></label>
+            <label><input type="radio" name="sourceRatio" value="4:3"> 4:3</label>
+            <label><input type="radio" name="sourceRatio" value="16:9"> 16:9</label>
 
-    <section>
-        <h2>Scaling Mode</h2>
+            <label class="custom-row">
+                <input type="radio" name="sourceRatio" value="custom">
+                Custom
+                <input type="number" id="sourceCustomX" min="1" step="1" value="4">
+                :
+                <input type="number" id="sourceCustomY" min="1" step="1" value="3">
+            </label>
+        </section>
 
-        <label><input type="radio" name="scalingMode" value="showAll"> Show all</label>
-        <label><input type="radio" name="scalingMode" value="coverAll"> Cover all</label>
+        <section>
+            <h2>Target Ratio</h2>
+            <label><input type="radio" name="targetRatio" value="original"> Original</label>
+            <label><input type="radio" name="targetRatio" value="4:3"> 4:3</label>
+            <label><input type="radio" name="targetRatio" value="16:9"> 16:9</label>
 
-        <label class="custom-row">
-            <input type="radio" name="scalingMode" value="manual">
-            Manual
-            <input type="number" id="manualScale" min="1" step="1" value="100">
-            %
-        </label>
-    </section>
+            <label class="custom-row">
+                <input type="radio" name="targetRatio" value="custom">
+                Custom
+                <input type="number" id="targetCustomX" min="1" step="1" value="16">
+                :
+                <input type="number" id="targetCustomY" min="1" step="1" value="9">
+            </label>
+        </section>
+
+        <section>
+            <h2>Scaling Mode</h2>
+
+            <label><input type="radio" name="scalingMode" value="showAll"> Show all</label>
+            <label><input type="radio" name="scalingMode" value="coverAll"> Cover all</label>
+
+            <label class="custom-row">
+                <input type="radio" name="scalingMode" value="manual">
+                Manual
+                <input type="number" id="manualScale" min="1" step="1" value="100">
+                %
+            </label>
+        </section>
+    </div>
     <script src="popup.js"></script>
 </body>
 

@@ -51,25 +51,16 @@
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     radios.forEach((radio) => radio.addEventListener("change", handler));
   }
-  function showOriginalRatio() {
-    switch (getRadioValue("sourceRatio")) {
-      case "auto":
-        const detectedRatio = getElement("detectedRatio", HTMLSpanElement).textContent;
-        getElement("originalRatio", HTMLSpanElement).textContent = detectedRatio;
-        return;
-      case "custom":
-        const customX = getElement("sourceCustomX", HTMLInputElement).value;
-        const customY = getElement("sourceCustomY", HTMLInputElement).value;
-        getElement("originalRatio", HTMLSpanElement).textContent = `${customX}:${customY}`;
-        return;
-      default:
-        getElement("originalRatio", HTMLSpanElement).textContent = getRadioValue("sourceRatio");
-        return;
+  function updateHideStatus() {
+    const hideWhenDisabled = getElement("hideWhenDisabled", HTMLDivElement);
+    if (getElement("enabled", HTMLInputElement).checked) {
+      hideWhenDisabled.style.display = "block";
+    } else {
+      hideWhenDisabled.style.display = "none";
     }
   }
   function showDetectedRatio(ratio) {
     getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
-    showOriginalRatio();
   }
   function getSettingsFromGUI() {
     return {
@@ -90,7 +81,7 @@
       }
     };
   }
-  function applySettingsToGUI(settings) {
+  function showSettings(settings) {
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
     setRadioValue("targetRatio", settings.targetRatio.mode);
     setRadioValue("scalingMode", settings.scalingMode.mode);
@@ -100,7 +91,11 @@
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
-    showOriginalRatio();
+    updateHideStatus();
+  }
+  function setupGUI() {
+    getElement("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
+    updateHideStatus();
   }
   function setUpdateListenerToGUI(listener) {
     setChangeListenerToRadioGroup("sourceRatio", listener);
@@ -123,13 +118,13 @@
         showDetectedRatio(message.ratio);
         break;
       case "CURRENT_SETTINGS":
-        applySettingsToGUI(message.settings);
+        showSettings(message.settings);
         break;
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
   sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
   sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
-  setUpdateListenerToGUI(() => showOriginalRatio());
+  setupGUI();
   setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
 })();
