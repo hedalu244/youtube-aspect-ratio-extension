@@ -27,20 +27,12 @@ function computeScale(sourceRatio: number, targetRatio: number, videoRatio: numb
     }
 
     const scaleX_fitWidth = Math.max(1, videoRatio / sourceRatio) * Math.max(1, wrapperRatio / videoRatio);
-    const scaleY_fitHeight = 1 / Math.min(1, videoRatio / sourceRatio) / Math.min(1, wrapperRatio / videoRatio);
+    const scaleY_fitHeight = Math.max(1, sourceRatio / videoRatio) * Math.max(1, videoRatio / wrapperRatio);
+    const scaleX_fitHeight = scaleY_fitHeight * targetRatio / sourceRatio;
+    const scaleX = (mode == "showAll" ? Math.min : Math.max)(scaleX_fitWidth, scaleX_fitHeight);
+    const scaleY = scaleX * sourceRatio / targetRatio;
 
-    switch (mode) {
-        case "showAll": {
-            const scaleX = Math.min(scaleX_fitWidth, scaleY_fitHeight * targetRatio / sourceRatio);
-            const scaleY = scaleX * sourceRatio / targetRatio;
-            return [scaleX, scaleY];
-        }
-        case "coverAll": {
-            const scaleX = Math.max(scaleX_fitWidth, scaleY_fitHeight * targetRatio / sourceRatio);
-            const scaleY = scaleX * sourceRatio / targetRatio;
-            return [scaleX, scaleY];
-        }
-    }
+    return [scaleX, scaleY];
 }
 
 // <video> にscaleを適用する。
@@ -53,12 +45,12 @@ function applyScale(video: HTMLVideoElement, scaleX: number, scaleY: number) {
 export function applySettingsToVideo(rawSettings: RawSettings, video: HTMLVideoElement) {
     const videoRatio = detectVideoAspectRatio(video);
     const wrapperRatio = detectWrapperAspectRatio(video);
-        
+
     const settings = normalizeSettings(rawSettings, videoRatio);
     if (!settings.enabled) {
         applyScale(video, 1, 1);
     } else {
-        
+
         console.log(settings.sourceRatio, settings.targetRatio, wrapperRatio, settings.scalingMode, settings.manualScale);
 
         const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, videoRatio, wrapperRatio, settings.scalingMode, settings.manualScale);
