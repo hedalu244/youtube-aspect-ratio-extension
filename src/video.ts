@@ -1,4 +1,4 @@
-import { normalizeSettings, RawSettings, Settings } from "./settingData";
+import { normalizeSettings, RawSettings } from "./settingData";
 
 function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" | "coverAll" | "manual", manualScale = 1): [number, number] {
     if (mode === "showAll") {
@@ -24,20 +24,8 @@ function applyScale(video: HTMLVideoElement, scaleX: number, scaleY: number) {
     console.log(`Applied scale x:${scaleX} y:${scaleY} to `, video);
 }
 
-export function getVideo(): HTMLVideoElement | null {
-    return document.querySelector("video");
-}
-
-export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElement | null = null) {
-    if (!video) {
-        video = getVideo();
-        if (!video) {
-            console.warn("Cannot apply settings because video element is not found");
-            return;
-        }
-    }
-
-    const s = normalizeSettings(settings, detectVideoAspectRatio());
+export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElement) {
+    const s = normalizeSettings(settings, detectVideoAspectRatio(video));
     console.log("Normalized settings", s);
     if (!s.enabled) {
         applyScale(video, 1, 1);
@@ -47,8 +35,7 @@ export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElem
     }
 }
 
-export function detectVideoAspectRatio(): number {
-    const video = getVideo();
+export function detectVideoAspectRatio(video: HTMLVideoElement | null): number {
     if (!video) {
         console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
         return 16 / 9;

@@ -88,18 +88,8 @@
     video.style.transform = `scale(${scaleX}, ${scaleY})`;
     console.log(`Applied scale x:${scaleX} y:${scaleY} to `, video);
   }
-  function getVideo() {
-    return document.querySelector("video");
-  }
-  function applySettingsToVideo(settings, video = null) {
-    if (!video) {
-      video = getVideo();
-      if (!video) {
-        console.warn("Cannot apply settings because video element is not found");
-        return;
-      }
-    }
-    const s = normalizeSettings(settings, detectVideoAspectRatio());
+  function applySettingsToVideo(settings, video) {
+    const s = normalizeSettings(settings, detectVideoAspectRatio(video));
     console.log("Normalized settings", s);
     if (!s.enabled) {
       applyScale(video, 1, 1);
@@ -108,8 +98,7 @@
       applyScale(video, scaleX, scaleY);
     }
   }
-  function detectVideoAspectRatio() {
-    const video = getVideo();
+  function detectVideoAspectRatio(video) {
     if (!video) {
       console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
       return 16 / 9;
@@ -135,10 +124,19 @@
   // src/content.ts
   console.log("YouTube Aspect Ratio content script loaded!");
   var currentSettings = generateDefaultSetting();
+  var currentVideo = null;
+  function apply() {
+    if (!currentVideo) {
+      console.warn("Cannot apply settings because video element is not found");
+      return;
+    }
+    applySettingsToVideo(currentSettings, currentVideo);
+    sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(currentVideo) });
+  }
   function messageHandler(message) {
     console.log("Received message in content script", message);
     if (message.type === "REQUEST_DETECTED_RATIO") {
-      sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio() });
+      sendMessageToPopup({ type: "DETECTED_RATIO", ratio: detectVideoAspectRatio(currentVideo) });
       return;
     }
     if (message.type === "REQUEST_CURRENT_SETTINGS") {
@@ -146,15 +144,16 @@
       return;
     }
     if (message.type === "REQUEST_APPLY_SETTINGS") {
-      applySettingsToVideo(currentSettings);
+      apply();
       return;
     }
     if (message.type === "SETTINGS_UPDATED") {
       currentSettings = message.settings;
-      applySettingsToVideo(currentSettings);
       saveGlobalSettings(currentSettings).catch((error) => {
         console.warn("Failed to save settings", error);
       });
+      apply();
+      return;
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
@@ -166,25 +165,40 @@
       console.warn("Failed to load settings", error);
     });
   }
-  function startObserveVideo() {
-    const video = getVideo();
-    if (!video) return false;
-    applySettingsToVideo(currentSettings, video);
-    video.addEventListener("loadedmetadata", () => applySettingsToVideo(currentSettings, video));
+  function checkNewVideo() {
+    const video = document.querySelector("video");
+    if (video) {
+      handleNewVideo(video);
+      return true;
+    }
+    return false;
+  }
+  function handleNewVideo(video) {
+    currentVideo = video;
+    apply();
+    video.addEventListener("loadedmetadata", () => apply());
     const observer = new MutationObserver(() => {
-      applySettingsToVideo(currentSettings, video);
+      apply();
     });
     observer.observe(video, { attributes: true });
-    return true;
+    const disconnectObserver = new MutationObserver(() => {
+      if (video.isConnected) return;
+      currentVideo = null;
+      observer.disconnect();
+      disconnectObserver.disconnect();
+      waitForNewVideo();
+    });
+    disconnectObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
   function waitForNewVideo() {
-    if (startObserveVideo()) return;
+    if (checkNewVideo()) return;
     const observer = new MutationObserver(() => {
-      if (startObserveVideo()) observer.disconnect();
+      if (checkNewVideo()) observer.disconnect();
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   }
   loadSettings();
+  apply();
   waitForNewVideo();
   document.addEventListener("yt-navigate-finish", waitForNewVideo);
 })();
