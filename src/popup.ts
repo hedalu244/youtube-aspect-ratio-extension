@@ -1,5 +1,5 @@
 import { MessageToPopup, sendMessageToContent } from "./message";
-import { getSettingsFromGUI, applySettingsToGUI, showDetectedRatio, setUpdateListenerToGUI } from "./gui";
+import { getSettingsFromGUI, applySettingsToGUI, showDetectedRatio, setUpdateListenerToGUI, showOriginalRatio } from "./gui";
 declare const chrome: any;
 
 console.log("Popup script loaded");
@@ -22,5 +22,8 @@ chrome.runtime.onMessage.addListener(messageHandler);
 sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
 
 sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
+
+
+setUpdateListenerToGUI(() => showOriginalRatio());
 
 setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));

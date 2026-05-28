@@ -51,6 +51,26 @@
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     radios.forEach((radio) => radio.addEventListener("change", handler));
   }
+  function showOriginalRatio() {
+    switch (getRadioValue("sourceRatio")) {
+      case "auto":
+        const detectedRatio = getElement("detectedRatio", HTMLSpanElement).textContent;
+        getElement("originalRatio", HTMLSpanElement).textContent = detectedRatio;
+        return;
+      case "custom":
+        const customX = getElement("sourceCustomX", HTMLInputElement).value;
+        const customY = getElement("sourceCustomY", HTMLInputElement).value;
+        getElement("originalRatio", HTMLSpanElement).textContent = `${customX}:${customY}`;
+        return;
+      default:
+        getElement("originalRatio", HTMLSpanElement).textContent = getRadioValue("sourceRatio");
+        return;
+    }
+  }
+  function showDetectedRatio(ratio) {
+    getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
+    showOriginalRatio();
+  }
   function getSettingsFromGUI() {
     return {
       enabled: getElement("enabled", HTMLInputElement).checked,
@@ -80,6 +100,7 @@
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
+    showOriginalRatio();
   }
   function setUpdateListenerToGUI(listener) {
     setChangeListenerToRadioGroup("sourceRatio", listener);
@@ -91,9 +112,6 @@
     getElement("targetCustomX", HTMLInputElement).addEventListener("input", listener);
     getElement("targetCustomY", HTMLInputElement).addEventListener("input", listener);
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
-  }
-  function showDetectedRatio(ratio) {
-    getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
   }
 
   // src/popup.ts
@@ -112,5 +130,6 @@
   chrome.runtime.onMessage.addListener(messageHandler);
   sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
   sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
+  setUpdateListenerToGUI(() => showOriginalRatio());
   setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
 })();

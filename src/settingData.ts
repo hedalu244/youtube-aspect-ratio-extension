@@ -33,13 +33,13 @@ export function generateDefaultSetting(): RawSettings {
         enabled: true,
         sourceRatio: {
             mode: "auto",
-            customX: "16",
-            customY: "9"
+            customX: "1",
+            customY: "1"
         },
         targetRatio: {
-            mode: "16:9",
-            customX: "16",
-            customY: "9"
+            mode: "original",
+            customX: "1",
+            customY: "1"
         },
         scalingMode: {
             mode: "showAll",
@@ -48,20 +48,66 @@ export function generateDefaultSetting(): RawSettings {
     };
 }
 
+// sourceRatioのmodeを解釈して実際の比率を返す
+// mode="auto" → detectedRatio
+// mode="custom" → customX/customY
+// mode="4:3"など → 1.333333など
+// その他 → エラー
+function normalizeSourceRatio(mode: string, customX: string, customY: string, detectedRatio: number,): number {
+    switch (mode) {
+        case "auto":
+            return detectedRatio;
+        case "custom":
+            // 0除算などはparseRatioの中で例外が出る
+            return parseRatio(customX + ":" + customY);
+        default: 
+            try {
+                return parseRatio(mode); // '4:3', '16:9', etc.
+            } catch {
+                throw new Error(`unknown source ratio mode: ${mode}`);
+            }
+    }
+}
+
+// targetRatioのmodeを解釈して実際の比率を返す
+// mode="original" → sourceRatio
+// mode="custom" → customX/customY
+// mode="4:3"など → 1.333333など
+// その他 → エラー
+function normalizeTargetRatio(mode: string, customX: string, customY: string, sourceRatio: number): number {
+    switch (mode) {
+        case "original":
+            return sourceRatio;
+        case "custom":
+            // 0除算などはparseRatioの中で例外が出る
+            return parseRatio(customX + ":" + customY);
+        default:
+            try {
+                return parseRatio(mode); // '4:3', '16:9', etc.
+            } catch {
+                throw new Error(`unknown target ratio mode: ${mode}`);
+            }
+    }
+}
+
+
 export function normalizeSettings(rawSettings: RawSettings, detectedRatio: number): Settings {
     if (!rawSettings.enabled) {
         return { enabled: false };
     }
 
-    const sourceRatio = rawSettings.sourceRatio.mode === "auto" ? detectedRatio
-        : parseRatio(rawSettings.sourceRatio.mode === "custom"
-            ? rawSettings.sourceRatio.customX + ":" + rawSettings.sourceRatio.customY
-            : rawSettings.sourceRatio.mode
-        );
+    const sourceRatio = normalizeSourceRatio(
+        rawSettings.sourceRatio.mode,
+        rawSettings.sourceRatio.customX,
+        rawSettings.sourceRatio.customY,
+        detectedRatio
+    );
 
-    const targetRatio = parseRatio(rawSettings.targetRatio.mode === "custom"
-        ? rawSettings.targetRatio.customX + ":" + rawSettings.targetRatio.customY
-        : rawSettings.targetRatio.mode
+    const targetRatio = normalizeTargetRatio(
+        rawSettings.targetRatio.mode,
+        rawSettings.targetRatio.customX,
+        rawSettings.targetRatio.customY,
+        sourceRatio
     );
 
     const mode = rawSettings.scalingMode.mode;

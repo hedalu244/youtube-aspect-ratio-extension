@@ -28,13 +28,13 @@
       enabled: true,
       sourceRatio: {
         mode: "auto",
-        customX: "16",
-        customY: "9"
+        customX: "1",
+        customY: "1"
       },
       targetRatio: {
-        mode: "16:9",
-        customX: "16",
-        customY: "9"
+        mode: "original",
+        customX: "1",
+        customY: "1"
       },
       scalingMode: {
         mode: "showAll",
@@ -42,15 +42,49 @@
       }
     };
   }
+  function normalizeSourceRatio(mode, customX, customY, detectedRatio) {
+    switch (mode) {
+      case "auto":
+        return detectedRatio;
+      case "custom":
+        return parseRatio(customX + ":" + customY);
+      default:
+        try {
+          return parseRatio(mode);
+        } catch {
+          throw new Error(`unknown source ratio mode: ${mode}`);
+        }
+    }
+  }
+  function normalizeTargetRatio(mode, customX, customY, sourceRatio) {
+    switch (mode) {
+      case "original":
+        return sourceRatio;
+      case "custom":
+        return parseRatio(customX + ":" + customY);
+      default:
+        try {
+          return parseRatio(mode);
+        } catch {
+          throw new Error(`unknown target ratio mode: ${mode}`);
+        }
+    }
+  }
   function normalizeSettings(rawSettings, detectedRatio) {
     if (!rawSettings.enabled) {
       return { enabled: false };
     }
-    const sourceRatio = rawSettings.sourceRatio.mode === "auto" ? detectedRatio : parseRatio(
-      rawSettings.sourceRatio.mode === "custom" ? rawSettings.sourceRatio.customX + ":" + rawSettings.sourceRatio.customY : rawSettings.sourceRatio.mode
+    const sourceRatio = normalizeSourceRatio(
+      rawSettings.sourceRatio.mode,
+      rawSettings.sourceRatio.customX,
+      rawSettings.sourceRatio.customY,
+      detectedRatio
     );
-    const targetRatio = parseRatio(
-      rawSettings.targetRatio.mode === "custom" ? rawSettings.targetRatio.customX + ":" + rawSettings.targetRatio.customY : rawSettings.targetRatio.mode
+    const targetRatio = normalizeTargetRatio(
+      rawSettings.targetRatio.mode,
+      rawSettings.targetRatio.customX,
+      rawSettings.targetRatio.customY,
+      sourceRatio
     );
     const mode = rawSettings.scalingMode.mode;
     if (mode !== "manual" && mode !== "showAll" && mode !== "coverAll") {

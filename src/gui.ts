@@ -27,9 +27,31 @@ function setChangeListenerToRadioGroup(name: string, handler: () => void) {
     radios.forEach(radio => radio.addEventListener("change", handler));
 }
 
+export function showOriginalRatio() {
+    switch (getRadioValue("sourceRatio")) {
+        case "auto": 
+            const detectedRatio = getElement("detectedRatio", HTMLSpanElement).textContent;
+            getElement("originalRatio", HTMLSpanElement).textContent = detectedRatio;
+            return;
+        case "custom":
+            const customX = getElement("sourceCustomX", HTMLInputElement).value;
+            const customY = getElement("sourceCustomY", HTMLInputElement).value;
+            getElement("originalRatio", HTMLSpanElement).textContent = `${customX}:${customY}`;
+            return;
+        default:
+            getElement("originalRatio", HTMLSpanElement).textContent = getRadioValue("sourceRatio");
+            return;
+    }
+}
+
+export function showDetectedRatio(ratio: number) {
+    getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
+    showOriginalRatio();
+}
+
 export function getSettingsFromGUI(): RawSettings {
     return {
-        enabled: (getElement("enabled", HTMLInputElement)).checked,
+        enabled: getElement("enabled", HTMLInputElement).checked,
 
         sourceRatio: {
             mode: getRadioValue("sourceRatio"),
@@ -60,6 +82,7 @@ export function applySettingsToGUI(settings: RawSettings) {
     getElement("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
     getElement("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
     getElement("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
+    showOriginalRatio();
 }
 
 export function setUpdateListenerToGUI(listener: () => void) {
@@ -74,8 +97,4 @@ export function setUpdateListenerToGUI(listener: () => void) {
     getElement("manualScale", HTMLInputElement).addEventListener("input", listener);
 
     //getElement("rememberPerVideo", HTMLInputElement).addEventListener("change", sendSettings);
-}
-
-export function showDetectedRatio(ratio: number) {
-    getElement("detectedRatio", HTMLSpanElement).textContent = ratioToString(ratio);
 }
