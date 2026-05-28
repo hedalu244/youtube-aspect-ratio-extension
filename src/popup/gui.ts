@@ -1,5 +1,5 @@
-import { RawSettings } from "./settingData";
-import { ratioToString } from "./ratio";
+import { RawSettings } from "../settingData";
+import { ratioToString } from "../ratio";
 
 // idから要素を取得する。存在しないときと型が違うときはエラーを投げる。
 function getElementById<T extends HTMLElement>(id: string, constructor: { new(): T; }): T {

@@ -1,5 +1,5 @@
 import { updateMainVideo } from "./mainVideoDetector";
-import { loadCurrentSettings } from "./settingManager";
+import { loadCurrentSettings } from "../storage";
 import { applySettingsToVideo } from "./video";
 
 let currentVideos: HTMLVideoElement[] = [];

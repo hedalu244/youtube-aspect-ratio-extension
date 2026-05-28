@@ -1,5 +1,5 @@
-import { MessageToContent, sendMessageToPopup } from "./message";
-import { forgetSettings, loadCurrentSettings, rememberSettings } from "./settingManager";
+import { MessageToContent, sendMessageToPopup } from "../message";
+import { forgetSettings, loadCurrentSettings, rememberSettings } from "../storage";
 import { applySettingsToAllVideos, observeDocument } from "./videoDetector";
 import { detectMainAspectRatio } from "./mainVideoDetector";
 

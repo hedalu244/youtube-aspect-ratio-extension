@@ -1,6 +1,6 @@
-import { MessageToPopup, sendMessageToActiveTab, sendMessageToAllTabs } from "./message";
+import { MessageToPopup, sendMessageToActiveTab, sendMessageToAllTabs } from "../message";
 import { getSettingsFromGUI, showDetectedRatio, setUpdateListenerToGUI, setupGUI, showSettings } from "./gui";
-import { forgetSettings, loadCurrentSettings, rememberSettings, saveGlobalSettings } from "./settingManager";
+import { saveGlobalSettings } from "../storage";
 declare const chrome: any;
 
 console.log("Popup script loaded");

@@ -4,8 +4,8 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "build": "esbuild src/popup.ts src/content.ts --bundle --outdir=. --format=iife --platform=browser --target=es2020",
-    "build:watch": "esbuild src/popup.ts src/content.ts --bundle --outdir=. --format=iife --platform=browser --target=es2020 --watch",
+    "build": "esbuild src/popup/popup.ts src/content/content.ts --bundle --minify --outdir=. --entry-names=[name] --format=iife --platform=browser --target=es2020",
+    "build:watch": "esbuild src/popup/popup.ts src/content/content.ts --bundle --minify --outdir=. --entry-names=[name] --format=iife --platform=browser --target=es2020 --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
