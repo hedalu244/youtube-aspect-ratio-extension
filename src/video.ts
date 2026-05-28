@@ -1,21 +1,20 @@
 import { normalizeSettings, RawSettings } from "./settingData";
 
 function computeScale(sourceRatio: number, targetRatio: number, mode: "showAll" | "coverAll" | "manual", manualScale = 1): [number, number] {
-    if (mode === "showAll") {
-        if (sourceRatio < targetRatio) {
-            return [1, sourceRatio / targetRatio];
-        } else {
-            return [targetRatio / sourceRatio, 1];
-        }
-    } else if (mode === "coverAll") {
-        if (sourceRatio < targetRatio) {
-            return [targetRatio / sourceRatio, 1];
-        } else {
-            return [1, sourceRatio / targetRatio];
-        }
-    } else { // if (mode === "manual")
-        const r = Math.sqrt(targetRatio / sourceRatio);
-        return [manualScale * r, manualScale / r];
+    switch (mode) {
+        case "showAll":
+            if (sourceRatio < targetRatio)
+                return [1, sourceRatio / targetRatio];
+            else
+                return [targetRatio / sourceRatio, 1];
+        case "coverAll":
+            if (sourceRatio < targetRatio)
+                return [targetRatio / sourceRatio, 1];
+            else
+                return [1, sourceRatio / targetRatio];
+        case "manual":
+            const r = Math.sqrt(targetRatio / sourceRatio);
+            return [manualScale * r, manualScale / r];
     }
 }
 
@@ -35,12 +34,7 @@ export function applySettingsToVideo(settings: RawSettings, video: HTMLVideoElem
     }
 }
 
-export function detectVideoAspectRatio(video: HTMLVideoElement | null): number {
-    if (!video) {
-        console.warn("Cannot detect video aspect ratio because video element is not found. Defaulting to 16:9.");
-        return 16 / 9;
-    }
-
+export function detectVideoAspectRatio(video: HTMLVideoElement): number {
     if (video.videoHeight === 0 || video.videoWidth === 0) {
         console.warn("Video metadata not loaded yet, cannot detect aspect ratio. Defaulting to 16:9.");
         return 16 / 9;

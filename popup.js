@@ -1,6 +1,6 @@
 (() => {
   // src/message.ts
-  async function sendMessageToActiveTab(message) {
+  async function sendMessageToContent(message) {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab?.id) {
       console.warn("No active tab found", message);
@@ -11,26 +11,6 @@
     } catch (error) {
       console.warn("Failed to send message to content script", message, error);
     }
-  }
-
-  // src/dom.ts
-  function getElement(id, constructor) {
-    const element = document.getElementById(id);
-    if (!element) {
-      throw new Error(`Element with id "${id}" not found`);
-    }
-    if (!(element instanceof constructor)) {
-      throw new Error(`Element with id "${id}" is not a ${constructor.name}`);
-    }
-    return element;
-  }
-  function getRadioValue(name) {
-    return document.querySelector(`input[name="${name}"]:checked`).value;
-  }
-  function setRadioValue(name, value) {
-    document.querySelectorAll(`input[name="${name}"]`).forEach((radio) => {
-      radio.checked = radio.value === value;
-    });
   }
 
   // src/ratio.ts
@@ -49,6 +29,24 @@
   }
 
   // src/gui.ts
+  function getElement(id, constructor) {
+    const element = document.getElementById(id);
+    if (!element) {
+      throw new Error(`Element with id "${id}" not found`);
+    }
+    if (!(element instanceof constructor)) {
+      throw new Error(`Element with id "${id}" is not a ${constructor.name}`);
+    }
+    return element;
+  }
+  function getRadioValue(name) {
+    return document.querySelector(`input[name="${name}"]:checked`).value;
+  }
+  function setRadioValue(name, value) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach((radio) => {
+      radio.checked = radio.value === value;
+    });
+  }
   function setChangeListenerToRadioGroup(name, handler) {
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     radios.forEach((radio) => radio.addEventListener("change", handler));
@@ -102,23 +100,17 @@
   console.log("Popup script loaded");
   function messageHandler(message) {
     console.log("Received message in popup script", message);
-    if (message.type === "DETECTED_RATIO") {
-      try {
+    switch (message.type) {
+      case "DETECTED_RATIO":
         showDetectedRatio(message.ratio);
-      } catch (error) {
-        console.warn("Failed to update detected ratio in popup", error);
-      }
-    }
-    if (message.type === "CURRENT_SETTINGS") {
-      try {
+        break;
+      case "CURRENT_SETTINGS":
         applySettingsToGUI(message.settings);
-      } catch (error) {
-        console.warn("Failed to apply current settings to popup", error);
-      }
+        break;
     }
   }
   chrome.runtime.onMessage.addListener(messageHandler);
-  sendMessageToActiveTab({ type: "REQUEST_CURRENT_SETTINGS" });
-  sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
-  setUpdateListenerToGUI(() => sendMessageToActiveTab({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
+  sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
+  sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
+  setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));
 })();

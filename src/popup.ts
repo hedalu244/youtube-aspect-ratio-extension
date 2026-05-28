@@ -1,32 +1,26 @@
-import { MessageCtoP, sendMessageToActiveTab } from "./message";
+import { MessageToPopup, sendMessageToContent } from "./message";
 import { getSettingsFromGUI, applySettingsToGUI, showDetectedRatio, setUpdateListenerToGUI } from "./gui";
 declare const chrome: any;
 
 console.log("Popup script loaded");
 
-function messageHandler(message: MessageCtoP) {
+function messageHandler(message: MessageToPopup) {
     console.log("Received message in popup script", message);
-    
-    if (message.type === "DETECTED_RATIO") {
-        try {
+
+    switch (message.type) {
+        case "DETECTED_RATIO":
             showDetectedRatio(message.ratio);
-        } catch (error) {
-            console.warn("Failed to update detected ratio in popup", error);
-        }
-    }
-    if (message.type === "CURRENT_SETTINGS") {
-        try {
+            break;
+        case "CURRENT_SETTINGS":
             applySettingsToGUI(message.settings);
-        } catch (error) {
-            console.warn("Failed to apply current settings to popup", error);
-        }
+            break;
     }
 }
 
 chrome.runtime.onMessage.addListener(messageHandler);
 
-sendMessageToActiveTab({ type: "REQUEST_CURRENT_SETTINGS" });
+sendMessageToContent({ type: "REQUEST_CURRENT_SETTINGS" });
 
-sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
+sendMessageToContent({ type: "REQUEST_DETECTED_RATIO" });
 
-setUpdateListenerToGUI(() => sendMessageToActiveTab({ type: "SETTINGS_UPDATED", settings : getSettingsFromGUI()}));
+setUpdateListenerToGUI(() => sendMessageToContent({ type: "SETTINGS_UPDATED", settings: getSettingsFromGUI() }));

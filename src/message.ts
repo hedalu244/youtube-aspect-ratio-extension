@@ -1,7 +1,7 @@
 import { RawSettings } from "./settingData";
 declare const chrome: any;
 
-export type MessagePtoC = {
+export type MessageToContent = {
     type: "SETTINGS_UPDATED";
     settings: RawSettings;
 } | {
@@ -12,7 +12,7 @@ export type MessagePtoC = {
     type: "REQUEST_APPLY_SETTINGS";
 };
 
-export type MessageCtoP = {
+export type MessageToPopup = {
     type: "DETECTED_RATIO";
     ratio: number;
 } | {
@@ -20,7 +20,7 @@ export type MessageCtoP = {
     settings: RawSettings;
 };
 
-export async function sendMessageToActiveTab(message: MessagePtoC) {
+export async function sendMessageToContent(message: MessageToContent) {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!activeTab?.id) {
@@ -35,7 +35,7 @@ export async function sendMessageToActiveTab(message: MessagePtoC) {
     }
 }
 
-export async function sendMessageToPopup(message: MessageCtoP) {
+export async function sendMessageToPopup(message: MessageToPopup) {
     try {
         void chrome.runtime.sendMessage(message);
     } catch (error) {

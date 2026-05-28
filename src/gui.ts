@@ -1,6 +1,26 @@
 import { RawSettings } from "./settingData";
-import { getElement, getRadioValue, setRadioValue } from "./dom";
 import { ratioToString } from "./ratio";
+
+function getElement<T extends HTMLElement>(id: string, constructor: { new(): T; }): T {
+    const element = document.getElementById(id);
+    if (!element) {
+        throw new Error(`Element with id "${id}" not found`);
+    }
+    if (!(element instanceof constructor)) {
+        throw new Error(`Element with id "${id}" is not a ${constructor.name}`);
+    }
+    return element;
+}
+
+function getRadioValue(name: string): string {
+    return (document.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+}
+
+function setRadioValue(name: string, value: string) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+        (radio as HTMLInputElement).checked = (radio as HTMLInputElement).value === value;
+    });
+}
 
 function setChangeListenerToRadioGroup(name: string, handler: () => void) {
     const radios = document.querySelectorAll(`input[name="${name}"]`);
