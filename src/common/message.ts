@@ -2,6 +2,9 @@ import { getActiveTab, getAllYoutubeTabs } from "./tabs";
 
 declare const chrome: any;
 
+// このモジュールでは、content scriptとpopup scriptの間でやりとりするメッセージの型と、
+// メッセージを送るためのユーティリティ関数を定義する。
+
 export type MessageToContent = {
     type: "SETTINGS_UPDATED";
 } | {

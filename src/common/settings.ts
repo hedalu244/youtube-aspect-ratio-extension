@@ -1,5 +1,9 @@
 import { parseRatio } from "./ratio";
 
+// このモジュールでは設定データを定義し、正規化と変換のユーティリティ関数を実装する。
+// Settingsはユーザーが入力したままの生の設定データで、ストレージにもこれが保存される。
+// NormalizedSettingsは実際に動画のアスペクト比を計算するために必要最低限の情報だけを持ったデータ。
+
 export type Settings = {
     enabled: boolean;
 

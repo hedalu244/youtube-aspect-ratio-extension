@@ -2,6 +2,8 @@ import { getElementById, getRadioValue, setRadioValue, setChangeListenerToRadioG
 import { Settings } from "../common/settings";
 import { ratioToString } from "../common/ratio";
 
+// このモジュールでは、popupのGUIに設定値を読み書きするための関数を定義する。
+
 // enabledのチェック状態と設定UIの表示非表示を一致させる。
 function updateHideStatus() {
     const hideWhenDisabled = getElementById("hideWhenDisabled", HTMLDivElement);

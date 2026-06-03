@@ -1,3 +1,5 @@
+// このモジュールでは、一般的なDOM操作のユーティリティ関数を定義する。
+
 // idから要素を取得する。存在しないときと型が違うときはエラーを投げる。
 export function getElementById<T extends HTMLElement>(id: string, constructor: { new(): T; }): T {
     const element = document.getElementById(id);

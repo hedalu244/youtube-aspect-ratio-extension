@@ -3,6 +3,9 @@ import { loadCurrentSettings } from "../common/storage";
 import { applySettingsToVideo } from "./video";
 import { Settings } from "../common/settings";
 
+// このモジュールでは、ページ内に存在するすべてのvideo要素を監視し、
+// ページを遷移した時や、新しいvideo要素が見つかったときなどに設定を適用する。
+
 let currentVideos: HTMLVideoElement[] = [];
 
 // 新しいvideo要素を見つけたときの処理

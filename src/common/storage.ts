@@ -1,6 +1,10 @@
 import { generateDefaultSetting, Settings, sanitizeSettings } from "./settings";
 declare const chrome: any;
 
+// ストレージに保存される設定を管理する。それぞれのURLに紐づいた設定と、唯一のglobalな設定の2種がある。
+// 保存時は、設定のrememberプロパティがtrueならURLと紐づけて、falseならglobalな設定として保存する。
+// URLと紐づいた設定が保存されていればそっちを優先して返す。存在しなければglobalな設定を返す。
+
 // globalな設定をロードする。存在しなかったときはデフォルトの設定を返す。戻り値は必ずremember: falseである。
 async function loadGlobalSettings(): Promise<Settings> {
     const result = await chrome.storage.sync.get("globalSettings");

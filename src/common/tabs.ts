@@ -12,6 +12,8 @@ export declare namespace chrome.tabs {
 }
 */
 
+// このモジュールでは、タブに関するユーティリティ関数を定義する。
+
 export async function getActiveTab() {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tabs.length === 0 || !tabs[0].id) {

@@ -1,5 +1,7 @@
 import { normalizeSettings, Settings } from "../common/settings";
 
+// このモジュールでは、設定に従ってYoutubeの動画にscaleを適用する。
+
 // <video>のアスペクト比を検出する。metadataが読み込まれていないときは16:9を返す。
 export function detectVideoAspectRatio(video: HTMLVideoElement): number {
     if (video.videoHeight === 0 || video.videoWidth === 0) {

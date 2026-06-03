@@ -2,7 +2,10 @@
 import { sendMessageToPopup } from "../common/message";
 import { detectVideoAspectRatio } from "./video";
 
-// ページ内で最大のVideo要素。主にdetectedとして比率を測定してUIに表示するためのもの
+// このモジュールでは、ページ内のVideo要素を監視して、最大のVideo要素をmainVideoとして保持する。
+// 測定した比率を"detected"としてUIに表示するためのもの。
+
+// ページ内で最大のVideo要素。
 let mainVideo: HTMLVideoElement | null = null;
 
 // メイン要素のアスペクト比を検出する。mainVideoが見つからないときは16:9を返す。
