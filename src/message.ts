@@ -1,4 +1,4 @@
-import { RawSettings } from "./settingData";
+import { getActiveTab, getAllYoutubeTabs } from "./tabs";
 
 declare const chrome: any;
 
@@ -6,13 +6,6 @@ export type MessageToContent = {
     type: "SETTINGS_UPDATED";
 } | {
     type: "REQUEST_DETECTED_RATIO";
-} | {
-    type: "REQUEST_REMEMBER_SETTINGS";
-    settings: RawSettings;
-} | {
-    type: "REQUEST_FORGET_SETTINGS";
-} | {
-    type: "REQUEST_CURRENT_SETTINGS";
 };
 
 export type MessageToPopup = {
@@ -21,21 +14,12 @@ export type MessageToPopup = {
 } | {
     type: "ACTIVE_URL";
     url: string;
-} | {
-    type: "CURRENT_SETTINGS";
-    settings: RawSettings;
 };
 
 // activeなタブのcontent scriptにメッセージを送る。
 export async function sendMessageToActiveTab(message: MessageToContent) {
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    if (!activeTab?.id) {
-        console.warn("No active tab found", message);
-        return;
-    }
-
     try {
+        const activeTab = await getActiveTab();
         await chrome.tabs.sendMessage(activeTab.id, message);
     } catch (error) {
         console.warn("Failed to send message to content script", message, error);
@@ -44,12 +28,9 @@ export async function sendMessageToActiveTab(message: MessageToContent) {
 
 // すべてのタブのcontent scriptにメッセージを送る。
 export async function sendMessageToAllTabs(message: MessageToContent) {
-    const tabs = await chrome.tabs.query({ url: ["https://www.youtube.com/*"] });
+    const tabs = await getAllYoutubeTabs();
 
     for (const tab of tabs) {
-        if (!tab.id) {
-            continue;
-        }
         try {
             await chrome.tabs.sendMessage(tab.id, message);
         } catch (error) {

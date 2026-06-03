@@ -1,19 +1,15 @@
+import { getActiveTabURL, isYouTubeURL } from "../tabs";
 import { MessageToPopup, sendMessageToActiveTab, sendMessageToAllTabs } from "../message";
-import { getSettingsFromGUI, showDetectedRatio, setUpdateListenerToGUI, setupGUI, showSettings } from "./gui";
-import { saveGlobalSettings } from "../storage";
+import { getSettingsFromGUI, showDetectedRatio, setEventListenerToGUI, setSettingsToGUI } from "./gui";
+import { loadCurrentSettings, saveCurrentSettings } from "../storage";
 declare const chrome: any;
 
 console.log("Popup script loaded");
 
 async function guiUpdateListener() {
+    const url = await getActiveTabURL();
     const settings = getSettingsFromGUI();
-
-    if (settings.remember) {
-        await sendMessageToActiveTab({ type: "REQUEST_REMEMBER_SETTINGS", settings });
-    } else {
-        await sendMessageToActiveTab({ type: "REQUEST_FORGET_SETTINGS" });
-        await saveGlobalSettings(settings);
-    }
+    await saveCurrentSettings(url, settings);
     await sendMessageToAllTabs({ type: "SETTINGS_UPDATED" });
 }
 
@@ -24,20 +20,19 @@ async function messageHandler(message: MessageToPopup) {
         case "DETECTED_RATIO":
             showDetectedRatio(message.ratio);
             return;
-        case "CURRENT_SETTINGS":
-            // CURRENT_SETTINGSは、popupが開かれたときにcontent scriptから送られてくる。
-            // この応答が来るまではGUIは操作できない。
-            setupGUI();
-
-            showSettings(message.settings);
-
-            setUpdateListenerToGUI(guiUpdateListener);
-
-            sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
-            break;
     }
 }
 
-chrome.runtime.onMessage.addListener(messageHandler);
+async function urlChanged() {
+    const url = await getActiveTabURL();
 
-sendMessageToActiveTab({ type: "REQUEST_CURRENT_SETTINGS" });
+    if (!url || !isYouTubeURL(url)) { setSettingsToGUI(null); return; }
+
+    const settings = await loadCurrentSettings(url);
+    setSettingsToGUI(settings);
+    sendMessageToActiveTab({ type: "REQUEST_DETECTED_RATIO" });
+}
+
+setEventListenerToGUI(guiUpdateListener);
+chrome.runtime.onMessage.addListener(messageHandler);
+urlChanged();

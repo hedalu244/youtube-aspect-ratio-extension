@@ -1,54 +1,6 @@
+import { getElementById, getRadioValue, setRadioValue, setChangeListenerToRadioGroup } from "./dom";
 import { RawSettings } from "../settingData";
 import { ratioToString } from "../ratio";
-
-// idから要素を取得する。存在しないときと型が違うときはエラーを投げる。
-function getElementById<T extends HTMLElement>(id: string, constructor: { new(): T; }): T {
-    const element = document.getElementById(id);
-    if (!element) {
-        throw new Error(`Element with id "${id}" not found`);
-    }
-    if (!(element instanceof constructor)) {
-        throw new Error(`${element} is not a ${constructor.name}`);
-    }
-    return element;
-}
-
-// nameから要素を取得する。存在しないときと型が違うときはエラーを投げる。
-function getElementsByName<T extends HTMLElement>(name: string, constructor: { new(): T; }): T[] {
-    const nodeList = document.getElementsByName(name);
-    const elements: T[] = [];
-    if (nodeList.length === 0) {
-        throw new Error(`Element with name "${name}" not found`);
-    }
-    for (const element of nodeList) {
-        if (!(element instanceof constructor)) {
-            throw new Error(`${element} is not a ${constructor.name}`);
-        }
-        elements.push(element);
-    }
-    return elements;
-}
-
-// ラジオボタンの値を取得する。
-function getRadioValue(name: string): string {
-    const radios = getElementsByName(name, HTMLInputElement);
-    for (const radio of radios) {
-        if (radio.checked) return radio.value;
-    }
-    throw new Error(`No radio button with name "${name}" is checked`);
-}
-
-// ラジオボタンの値を設定する。
-function setRadioValue(name: string, value: string) {
-    getElementsByName(name, HTMLInputElement).forEach(radio => {
-        radio.checked = radio.value === value;
-    });
-}
-
-// ラジオボタンのグループに変更リスナーを設定する。
-function setChangeListenerToRadioGroup(name: string, handler: () => void) {
-    getElementsByName(name, HTMLInputElement).forEach(radio => radio.addEventListener("change", handler));
-}
 
 // enabledのチェック状態と設定UIの表示非表示を一致させる。
 function updateHideStatus() {
@@ -60,11 +12,19 @@ function updateHideStatus() {
     }
 }
 
-// GUIのdisabledを解除し、使える状態にする。
-export function setupGUI() {
-    getElementById("enabled", HTMLInputElement).disabled = false;
-    updateHideStatus();
-    getElementById("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
+function unlockGUI() {
+    if (getElementById("enabled", HTMLInputElement).disabled) {
+        getElementById("enabled", HTMLInputElement).disabled = false;
+        updateHideStatus();
+    }
+}
+
+function lockGUI() {
+    if (!getElementById("enabled", HTMLInputElement).disabled) {
+        getElementById("enabled", HTMLInputElement).checked = false;
+        getElementById("enabled", HTMLInputElement).disabled = true;
+        updateHideStatus();
+    }
 }
 
 // GUIから設定を取得する。
@@ -89,8 +49,12 @@ export function getSettingsFromGUI(): RawSettings {
     };
 }
 
-// GUIに設定を表示する。
-export function showSettings(settings: RawSettings) {
+// GUIに設定を表示する。nullが渡されたときはGUIを操作できないようにする。
+export function setSettingsToGUI(settings: RawSettings | null) {
+    if (!settings) { lockGUI(); return; }
+
+    unlockGUI();
+
     setRadioValue("sourceRatio", settings.sourceRatio.mode);
     setRadioValue("targetRatio", settings.targetRatio.mode);
     setRadioValue("scalingMode", settings.scalingMode.mode);
@@ -106,17 +70,19 @@ export function showSettings(settings: RawSettings) {
 }
 
 // GUIの変更を監視するリスナーを登録する。
-export function setUpdateListenerToGUI(listener: () => void) {
-    setChangeListenerToRadioGroup("sourceRatio", listener);
-    setChangeListenerToRadioGroup("targetRatio", listener);
-    setChangeListenerToRadioGroup("scalingMode", listener);
-    getElementById("enabled", HTMLInputElement).addEventListener("change", listener);
-    getElementById("sourceCustomX", HTMLInputElement).addEventListener("input", listener);
-    getElementById("sourceCustomY", HTMLInputElement).addEventListener("input", listener);
-    getElementById("targetCustomX", HTMLInputElement).addEventListener("input", listener);
-    getElementById("targetCustomY", HTMLInputElement).addEventListener("input", listener);
-    getElementById("manualScale", HTMLInputElement).addEventListener("input", listener);
-    getElementById("remember", HTMLInputElement).addEventListener("input", listener);
+export function setEventListenerToGUI(updateListener: () => void) {
+    setChangeListenerToRadioGroup("sourceRatio", updateListener);
+    setChangeListenerToRadioGroup("targetRatio", updateListener);
+    setChangeListenerToRadioGroup("scalingMode", updateListener);
+    getElementById("enabled", HTMLInputElement).addEventListener("change", updateListener);
+    getElementById("sourceCustomX", HTMLInputElement).addEventListener("input", updateListener);
+    getElementById("sourceCustomY", HTMLInputElement).addEventListener("input", updateListener);
+    getElementById("targetCustomX", HTMLInputElement).addEventListener("input", updateListener);
+    getElementById("targetCustomY", HTMLInputElement).addEventListener("input", updateListener);
+    getElementById("manualScale", HTMLInputElement).addEventListener("input", updateListener);
+    getElementById("remember", HTMLInputElement).addEventListener("input", updateListener);
+
+    getElementById("enabled", HTMLInputElement).addEventListener("change", updateHideStatus);
 }
 
 // アスペクト比をGUIに表示する。

@@ -1,7 +1,7 @@
 import { generateDefaultSetting, RawSettings } from "./settingData";
 declare const chrome: any;
 
-// globalな設定をロードする。存在しなかったときはデフォルトの設定を返す。これらは必ずremember: falseである。
+// globalな設定をロードする。存在しなかったときはデフォルトの設定を返す。戻り値は必ずremember: falseである。
 async function loadGlobalSettings(): Promise<RawSettings> {
     const result = await chrome.storage.sync.get("globalSettings");
     const globalSettings = result.globalSettings || generateDefaultSetting();
@@ -10,7 +10,7 @@ async function loadGlobalSettings(): Promise<RawSettings> {
     return { ...globalSettings, remember: false };
 }
 
-// URLに紐づいた設定をロードする。これはremember: trueである。存在しなかったときはnullを返す。
+// URLに紐づいた設定をロードする。戻り値は必ずremember: trueである。存在しなかったときはnullを返す。
 async function loadURLSettings(url: string): Promise<RawSettings | null> {
     const result = await chrome.storage.sync.get("urlSettings");
     const urlSettings = (result.urlSettings || {})[url] || null;
@@ -19,13 +19,23 @@ async function loadURLSettings(url: string): Promise<RawSettings | null> {
     return { ...urlSettings, remember: true };
 }
 
+// 現在のURLに対する設定をロードする。URLに紐づいた設定が存在すればそれを、なければglobalな設定を返す。
+export async function loadCurrentSettings(url: string): Promise<RawSettings> {
+    try {
+        return await loadURLSettings(url) || await loadGlobalSettings();
+    } catch (error) {
+        console.warn("Failed to load settings", error);
+        return generateDefaultSetting();
+    }
+}
+
 // globalな設定を保存する。
-export async function saveGlobalSettings(settings: RawSettings) {
+async function saveGlobalSettings(settings: RawSettings) {
     await chrome.storage.sync.set({ globalSettings: settings });
 }
 
 // URLに紐づいた設定を保存する。
-export async function rememberSettings(url: string, settings: RawSettings) {
+async function rememberSettings(url: string, settings: RawSettings) {
     const result = await chrome.storage.sync.get("urlSettings");
     const urlSettings = result.urlSettings || {};
     urlSettings[url] = settings;
@@ -33,23 +43,19 @@ export async function rememberSettings(url: string, settings: RawSettings) {
 }
 
 // URLに紐づいた設定を削除する。
-export async function forgetSettings(url: string) {
+async function forgetSettings(url: string) {
     const result = await chrome.storage.sync.get("urlSettings");
     const urlSettings = result.urlSettings || {};
     delete urlSettings[url];
     await chrome.storage.sync.set({ urlSettings });
 }
 
-// 現在のURLに対する設定をロードする。URLに紐づいた設定が存在すればそれを、なければglobalな設定を返す。
-export async function loadCurrentSettings(url: string): Promise<RawSettings> {
-    try {
-        const urlSettings = await loadURLSettings(url);
-        if (urlSettings) { return urlSettings; }
-
-        const globalSettings = await loadGlobalSettings();
-        return globalSettings;
-    } catch (error) {
-        console.warn("Failed to load settings", error);
-        return generateDefaultSetting();
+// 現在のURLに対する設定を保存する。settings.rememberがtrueならURLに紐づいた設定として保存し、falseならURLに紐づいた設定を削除し、globalな設定として保存する。
+export async function saveCurrentSettings(url: string, settings: RawSettings) {
+    if (settings.remember) {
+        await rememberSettings(url, settings);
+    } else {
+        await forgetSettings(url);
+        await saveGlobalSettings(settings);
     }
 }

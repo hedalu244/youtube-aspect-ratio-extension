@@ -1,6 +1,7 @@
 import { updateMainVideo } from "./mainVideoDetector";
 import { loadCurrentSettings } from "../storage";
 import { applySettingsToVideo } from "./video";
+import { RawSettings } from "../settingData";
 
 let currentVideos: HTMLVideoElement[] = [];
 
@@ -49,7 +50,7 @@ export function observeDocument() {
 }
 
 // ページ内のすべてのvideo要素に設定を適用する。
-export async function applySettingsToAllVideos() {
+export async function applySettingsToAllVideos(settings: RawSettings) {
     for (const video of currentVideos)
-        applySettingsToVideo(await loadCurrentSettings(window.location.href), video);
+        applySettingsToVideo(settings, video);
 }
