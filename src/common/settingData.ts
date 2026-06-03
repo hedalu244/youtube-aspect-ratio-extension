@@ -1,25 +1,23 @@
 import { parseRatio } from "./ratio";
 
-export type RawSettings = {
+export type Settings = {
     enabled: boolean;
-    sourceRatio: {
-        mode: string;
-        customX: string;
-        customY: string;
-    };
-    targetRatio: {
-        mode: string;
-        customX: string;
-        customY: string;
-    };
-    scalingMode: {
-        mode: string;
-        manualScale: string;
-    };
+
+    sourceRatioMode: string;
+    sourceRatioCustomX: string;
+    sourceRatioCustomY: string;
+
+    targetRatioMode: string;
+    targetRatioCustomX: string;
+    targetRatioCustomY: string;
+
+    scalingMode: string;
+    manualScale: string;
+
     remember: boolean;
 };
 
-export type Settings = {
+export type NormalizedSettings = {
     enabled: false;
 } | {
     enabled: true;
@@ -30,25 +28,35 @@ export type Settings = {
 };
 
 // デフォルトの設定を作る
-export function generateDefaultSetting(): RawSettings {
+export function generateDefaultSetting(): Settings {
     return {
         enabled: true,
-        sourceRatio: {
-            mode: "auto",
-            customX: "1",
-            customY: "1"
-        },
-        targetRatio: {
-            mode: "original",
-            customX: "1",
-            customY: "1"
-        },
-        scalingMode: {
-            mode: "showAll",
-            manualScale: "100"
-        },
+        sourceRatioMode: "auto",
+        sourceRatioCustomX: "1",
+        sourceRatioCustomY: "1",
+        targetRatioMode: "original",
+        targetRatioCustomX: "1",
+        targetRatioCustomY: "1",
+        scalingMode: "showAll",
+        manualScale: "100",
         remember: false // 重要。これがtrueだとすべての動画の設定が保存されてしまい、ストレージに悪影響そう
     };
+}
+
+// 設定オブジェクトの欠けている部分をデフォルトの値で補完して正規化し、過剰な部分を削除する。
+export function sanitizeSettings(rawSettings: any): Settings {
+    if (typeof rawSettings !== "object" || rawSettings === null) {
+        return generateDefaultSetting();
+    }
+    const settings = generateDefaultSetting() as any;
+
+    for (const key in settings) {
+        if (key in rawSettings && typeof rawSettings[key] === typeof settings[key]) {
+            settings[key] = rawSettings[key];
+        }
+    }
+
+    return settings as Settings;
 }
 
 // sourceRatioのmodeを解釈して実際の比率を返す
@@ -63,7 +71,7 @@ function normalizeSourceRatio(mode: string, customX: string, customY: string, de
         case "custom":
             // 0除算などはparseRatioの中で例外が出る
             return parseRatio(customX + ":" + customY);
-        default: 
+        default:
             try {
                 return parseRatio(mode); // '4:3', '16:9', etc.
             } catch {
@@ -93,27 +101,27 @@ function normalizeTargetRatio(mode: string, customX: string, customY: string, so
     }
 }
 
-// RawSettingsから不要な情報を削除して正規化する。
-export function normalizeSettings(rawSettings: RawSettings, detectedRatio: number): Settings {
-    if (!rawSettings.enabled) {
+// Settingsから不要な情報を削除して正規化する。
+export function normalizeSettings(settings: Settings, detectedRatio: number): NormalizedSettings {
+    if (!settings.enabled) {
         return { enabled: false };
     }
 
     const sourceRatio = normalizeSourceRatio(
-        rawSettings.sourceRatio.mode,
-        rawSettings.sourceRatio.customX,
-        rawSettings.sourceRatio.customY,
+        settings.sourceRatioMode,
+        settings.sourceRatioCustomX,
+        settings.sourceRatioCustomY,
         detectedRatio
     );
 
     const targetRatio = normalizeTargetRatio(
-        rawSettings.targetRatio.mode,
-        rawSettings.targetRatio.customX,
-        rawSettings.targetRatio.customY,
+        settings.targetRatioMode,
+        settings.targetRatioCustomX,
+        settings.targetRatioCustomY,
         sourceRatio
     );
 
-    const mode = rawSettings.scalingMode.mode;
+    const mode = settings.scalingMode;
 
     if (mode !== "manual" && mode !== "showAll" && mode !== "coverAll") {
         throw new Error(`Invalid scaling mode: ${mode}`);
@@ -124,6 +132,6 @@ export function normalizeSettings(rawSettings: RawSettings, detectedRatio: numbe
         sourceRatio,
         targetRatio,
         scalingMode: mode,
-        manualScale: mode === "manual" ? parseFloat(rawSettings.scalingMode.manualScale) / 100 : 1
+        manualScale: mode === "manual" ? parseFloat(settings.manualScale) / 100 : 1
     };
 }

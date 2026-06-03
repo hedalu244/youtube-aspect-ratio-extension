@@ -1,4 +1,4 @@
-import { normalizeSettings, RawSettings } from "../common/settingData";
+import { normalizeSettings, Settings } from "../common/settingData";
 
 // <video>のアスペクト比を検出する。metadataが読み込まれていないときは16:9を返す。
 export function detectVideoAspectRatio(video: HTMLVideoElement): number {
@@ -41,18 +41,21 @@ function applyScale(video: HTMLVideoElement, scaleX: number, scaleY: number) {
 }
 
 // <video> に設定を適用する。
-export function applySettingsToVideo(rawSettings: RawSettings, video: HTMLVideoElement) {
+export function applySettingsToVideo(settings: Settings, video: HTMLVideoElement) {
     const videoRatio = detectVideoAspectRatio(video);
     const wrapperRatio = detectWrapperAspectRatio(video);
 
-    const settings = normalizeSettings(rawSettings, videoRatio);
-    if (!settings.enabled) {
+    const normalizedSettings = normalizeSettings(settings, videoRatio);
+    if (!normalizedSettings.enabled) {
         applyScale(video, 1, 1);
     } else {
-
-        console.log(settings.sourceRatio, settings.targetRatio, wrapperRatio, settings.scalingMode, settings.manualScale);
-
-        const [scaleX, scaleY] = computeScale(settings.sourceRatio, settings.targetRatio, videoRatio, wrapperRatio, settings.scalingMode, settings.manualScale);
+        const [scaleX, scaleY] = computeScale(
+            normalizedSettings.sourceRatio,
+            normalizedSettings.targetRatio,
+            videoRatio,
+            wrapperRatio,
+            normalizedSettings.scalingMode,
+            normalizedSettings.manualScale);
         applyScale(video, scaleX, scaleY);
     }
 }

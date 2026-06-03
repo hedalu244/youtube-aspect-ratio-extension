@@ -1,5 +1,5 @@
 import { getElementById, getRadioValue, setRadioValue, setChangeListenerToRadioGroup } from "./dom";
-import { RawSettings } from "../common/settingData";
+import { Settings } from "../common/settingData";
 import { ratioToString } from "../common/ratio";
 
 // enabledのチェック状態と設定UIの表示非表示を一致させる。
@@ -28,42 +28,40 @@ function lockGUI() {
 }
 
 // GUIから設定を取得する。
-export function getSettingsFromGUI(): RawSettings {
+export function getSettingsFromGUI(): Settings {
     return {
         enabled: getElementById("enabled", HTMLInputElement).checked,
-        sourceRatio: {
-            mode: getRadioValue("sourceRatio"),
-            customX: getElementById("sourceCustomX", HTMLInputElement).value,
-            customY: getElementById("sourceCustomY", HTMLInputElement).value
-        },
-        targetRatio: {
-            mode: getRadioValue("targetRatio"),
-            customX: getElementById("targetCustomX", HTMLInputElement).value,
-            customY: getElementById("targetCustomY", HTMLInputElement).value
-        },
-        scalingMode: {
-            mode: getRadioValue("scalingMode"),
-            manualScale: getElementById("manualScale", HTMLInputElement).value
-        },
+        
+        sourceRatioMode: getRadioValue("sourceRatio"),
+        sourceRatioCustomX: getElementById("sourceCustomX", HTMLInputElement).value,
+        sourceRatioCustomY: getElementById("sourceCustomY", HTMLInputElement).value,
+
+        targetRatioMode: getRadioValue("targetRatio"),
+        targetRatioCustomX: getElementById("targetCustomX", HTMLInputElement).value,
+        targetRatioCustomY: getElementById("targetCustomY", HTMLInputElement).value,
+
+        scalingMode: getRadioValue("scalingMode"),
+        manualScale: getElementById("manualScale", HTMLInputElement).value,
+        
         remember: getElementById("remember", HTMLInputElement).checked
     };
 }
 
 // GUIに設定を表示する。nullが渡されたときはGUIを操作できないようにする。
-export function setSettingsToGUI(settings: RawSettings | null) {
+export function setSettingsToGUI(settings: Settings | null) {
     if (!settings) { lockGUI(); return; }
 
     unlockGUI();
 
-    setRadioValue("sourceRatio", settings.sourceRatio.mode);
-    setRadioValue("targetRatio", settings.targetRatio.mode);
-    setRadioValue("scalingMode", settings.scalingMode.mode);
+    setRadioValue("sourceRatio", settings.sourceRatioMode);
+    setRadioValue("targetRatio", settings.targetRatioMode);
+    setRadioValue("scalingMode", settings.scalingMode);
     getElementById("enabled", HTMLInputElement).checked = settings.enabled;
-    getElementById("sourceCustomX", HTMLInputElement).value = settings.sourceRatio.customX;
-    getElementById("sourceCustomY", HTMLInputElement).value = settings.sourceRatio.customY;
-    getElementById("targetCustomX", HTMLInputElement).value = settings.targetRatio.customX;
-    getElementById("targetCustomY", HTMLInputElement).value = settings.targetRatio.customY;
-    getElementById("manualScale", HTMLInputElement).value = settings.scalingMode.manualScale;
+    getElementById("sourceCustomX", HTMLInputElement).value = settings.sourceRatioCustomX;
+    getElementById("sourceCustomY", HTMLInputElement).value = settings.sourceRatioCustomY;
+    getElementById("targetCustomX", HTMLInputElement).value = settings.targetRatioCustomX;
+    getElementById("targetCustomY", HTMLInputElement).value = settings.targetRatioCustomY;
+    getElementById("manualScale", HTMLInputElement).value = settings.manualScale;
     getElementById("remember", HTMLInputElement).checked = settings.remember;
 
     updateHideStatus();
