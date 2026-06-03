@@ -1,5 +1,5 @@
 import { getElementById, getRadioValue, setRadioValue, setChangeListenerToRadioGroup } from "./dom";
-import { Settings } from "../common/settingData";
+import { Settings } from "../common/settings";
 import { ratioToString } from "../common/ratio";
 
 // enabledのチェック状態と設定UIの表示非表示を一致させる。

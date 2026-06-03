@@ -1,4 +1,4 @@
-import { generateDefaultSetting, Settings, sanitizeSettings } from "./settingData";
+import { generateDefaultSetting, Settings, sanitizeSettings } from "./settings";
 declare const chrome: any;
 
 // globalな設定をロードする。存在しなかったときはデフォルトの設定を返す。戻り値は必ずremember: falseである。
