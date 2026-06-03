@@ -1,7 +1,7 @@
-import { getActiveTabURL, isYouTubeURL } from "../tabs";
-import { MessageToPopup, sendMessageToActiveTab, sendMessageToAllTabs } from "../message";
+import { getActiveTabURL, isYouTubeURL } from "../common/tabs";
+import { MessageToPopup, sendMessageToActiveTab, sendMessageToAllTabs } from "../common/message";
 import { getSettingsFromGUI, showDetectedRatio, setEventListenerToGUI, setSettingsToGUI } from "./gui";
-import { loadCurrentSettings, saveCurrentSettings } from "../storage";
+import { loadCurrentSettings, saveCurrentSettings } from "../common/storage";
 declare const chrome: any;
 
 console.log("Popup script loaded");

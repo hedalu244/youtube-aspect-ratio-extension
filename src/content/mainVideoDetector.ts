@@ -1,5 +1,5 @@
 
-import { sendMessageToPopup } from "../message";
+import { sendMessageToPopup } from "../common/message";
 import { detectVideoAspectRatio } from "./video";
 
 // ページ内で最大のVideo要素。主にdetectedとして比率を測定してUIに表示するためのもの

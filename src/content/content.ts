@@ -1,7 +1,7 @@
-import { MessageToContent } from "../message";
+import { MessageToContent } from "../common/message";
 import { applySettingsToAllVideos, observeDocument } from "./videoDetector";
 import { sendDetectedRatioToPopup } from "./mainVideoDetector";
-import { loadCurrentSettings } from "../storage";
+import { loadCurrentSettings } from "../common/storage";
 
 declare const chrome: any;
 

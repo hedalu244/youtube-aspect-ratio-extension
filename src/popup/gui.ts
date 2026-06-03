@@ -1,6 +1,6 @@
 import { getElementById, getRadioValue, setRadioValue, setChangeListenerToRadioGroup } from "./dom";
-import { RawSettings } from "../settingData";
-import { ratioToString } from "../ratio";
+import { RawSettings } from "../common/settingData";
+import { ratioToString } from "../common/ratio";
 
 // enabledのチェック状態と設定UIの表示非表示を一致させる。
 function updateHideStatus() {

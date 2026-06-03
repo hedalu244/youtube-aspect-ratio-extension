@@ -1,5 +1,4 @@
-import { normalizeSettings, RawSettings } from "../settingData";
-
+import { normalizeSettings, RawSettings } from "../common/settingData";
 
 // <video>のアスペクト比を検出する。metadataが読み込まれていないときは16:9を返す。
 export function detectVideoAspectRatio(video: HTMLVideoElement): number {
